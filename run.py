@@ -6,9 +6,18 @@ import traceback
 import shutil
 import glob
 
+import urllib.request
+
 def print_and_run(*cmd):
   print('> {}'.format(' '.join(list(cmd))))
   subprocess.run(list(cmd), check=True)
+
+def ensure_downloaded(url, file_path):
+  if not os.path.exists(file_path):
+    with open(file_path, 'wb') as fd:
+      fd.write(
+        urllib.request.urlopen(url).read()
+      )
 
 def main(args=sys.argv):
   while len(args) > 0 and ('python' in args[0] or os.path.basename(__file__) in args[0]):
@@ -59,17 +68,34 @@ def main(args=sys.argv):
     )
     return
 
-
   # We try to compile the plugin if we have javac, else we
   # assume the plugin's .class files are all under the folder dist/*.class
   javac_exe = None
   if shutil.which('javac'):
     javac_exe = shutil.which('javac')
 
-  tsv_map_plusin_dist = os.path.join(os.path.dirname(__file__), 'dist')
+  tsv_map_plugin_dist = os.path.join(os.path.dirname(__file__), 'dist')
 
-  if not os.path.exists(tsv_map_plusin_dist):
-    os.makedirs(tsv_map_plusin_dist)
+  if not os.path.exists(tsv_map_plugin_dist):
+    os.makedirs(tsv_map_plugin_dist)
+
+  # Download https://github.com/blackears/svgSalamander/releases/download/v1.1.4/svgSalamander-1.1.4.jar
+  # And add it to our compile + run classpath.
+  # The svg rendering library is used to (1) modify and (2) render SVGs of the world as a map graph.
+  # This approach makes it trivial for users to display _any_ aoi - simply create an svg with IDs that
+  # match values in a dataset.
+  svg_salamander_jar = os.path.join(tsv_map_plugin_dist, 'svgSalamander-1.1.3.jar')
+  ensure_downloaded(
+    'https://github.com/blackears/svgSalamander/releases/download/v1.1.3/svgSalamander-1.1.3.jar',
+    svg_salamander_jar
+  )
+
+  tsv_classpath = [
+    os.path.join(tsv_dir, 'dist'),
+    os.path.join(tsv_dir, 'dist', 'atsv.jar'),
+    os.path.join(tsv_dir, 'dist', 'parser.jar'),
+    svg_salamander_jar,
+  ]
 
   if javac_exe is None:
     print()
@@ -82,24 +108,19 @@ def main(args=sys.argv):
     src_java_files = [
       x for x in glob.glob('src/**/*.java', recursive=True)
     ]
-    tsv_classpath = [
-      os.path.join(tsv_dir, 'dist'),
-      os.path.join(tsv_dir, 'dist', 'atsv.jar'),
-      os.path.join(tsv_dir, 'dist', 'parser.jar'),
-    ]
     if len(src_java_files) > 0:
       print_and_run(
         javac_exe,
-          '-d', tsv_map_plusin_dist,
+          '-d', tsv_map_plugin_dist,
           '-cp', os.pathsep.join(tsv_classpath),
           *src_java_files
       )
     
     # Copy icon resource
-    shutil.copy(os.path.join('src', 'JWACMapPlot.gif'), os.path.join(tsv_map_plusin_dist, 'JWACMapPlot.gif'))
+    shutil.copy(os.path.join('src', 'JWACMapPlot.gif'), os.path.join(tsv_map_plugin_dist, 'JWACMapPlot.gif'))
 
   # Add our dist/ to the plugin class path
-  tsv_classpath.insert(0, tsv_map_plusin_dist)
+  tsv_classpath.insert(0, tsv_map_plugin_dist)
 
   print_and_run(
     java_exe,

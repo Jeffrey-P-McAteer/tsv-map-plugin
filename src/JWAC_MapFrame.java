@@ -230,17 +230,42 @@ public class JWAC_MapFrame extends JFrame implements Listener {
       private JToolBar toolbar;
       private JFrame parentFrame;
 
+      private com.kitfox.svg.SVGUniverse svg_universe;
+
       public JWAC_MapPanel() {
           this.toolbar = new JToolBar();
           this.constructMapToolbar(this.toolbar);
-
+          this.svg_universe = new com.kitfox.svg.SVGUniverse();
+          this.constructPanelUI(this.svg_universe);
       }
 
       private void constructMapToolbar(JToolBar toolbar) {
 
       }
 
+      private void constructPanelUI(com.kitfox.svg.SVGUniverse svg_universe) {
+          try {
+            java.net.URI svg = svg_universe.loadSVG(
+                //new java.net.URL("https://upload.wikimedia.org/wikipedia/commons/4/4d/BlankMap-World.svg")
+                new java.net.URL("https://simplemaps.com/static/demos/resources/svg-library/svgs/world.svg")
+            );
+            com.kitfox.svg.SVGDiagram diagram = svg_universe.getDiagram(svg);
+
+            com.kitfox.svg.SVGDisplayPanel view = new com.kitfox.svg.SVGDisplayPanel();
+            view.setDiagram(diagram);
+            
+            this.add(view);
+
+            this.repaint();
+
+          }
+          catch (Exception e) {
+            System.out.println("constructPanelUI e = "+e);
+          }
+      }
+
       public void actionPerformed(ActionEvent e) {
+          System.out.println("JWAC_MapPanel actionPerformed e="+e);
 
       }
 
