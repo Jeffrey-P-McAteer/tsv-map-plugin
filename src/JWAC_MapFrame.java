@@ -23,8 +23,16 @@ import nddv.data.listeners.Listener;
 import nddv.data.session.SessionObjects;
 import nddv.useroperations.ExportStringtoFile;
 
+import javax.swing.JToolBar;
+import java.awt.Color;
+import java.awt.GridLayout;
+import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.List;
+
 public class JWAC_MapFrame extends JFrame implements Listener {
-  //private HistogramPanel histogramPanel;
+  private JWAC_MapPanel mapPanel;
   
   protected JButton brushSelection = new JButton(new ImageIcon(getClass().getResource("/images/linked.jpg")));
   
@@ -43,9 +51,9 @@ public class JWAC_MapFrame extends JFrame implements Listener {
     setSize(600, 600);
     this.panelDisplay = new JPanel();
     this.panelDisplay.setLayout(new BorderLayout());
-    // this.histogramPanel = new HistogramPanel();
+    this.mapPanel = new JWAC_MapPanel();
     // this.histogramPanel.getModel().setShowLabels(true);
-    // this.histogramPanel.setParentFrame(this);
+    this.mapPanel.setParentFrame(this);
     // this.histogramPanel.getToolBar().add(Box.createHorizontalStrut(10));
     // this.histogramPanel.getToolBar().addToolBarItem(this.brushSelection);
     this.brushSelection.addMouseListener(new MouseAdapter() {
@@ -58,10 +66,10 @@ public class JWAC_MapFrame extends JFrame implements Listener {
             } 
           }
         });
-    JScrollPane pane = new JScrollPane(/*this.histogramPanel*/);
+    JScrollPane pane = new JScrollPane(this.mapPanel);
     pane.setSize(new Dimension(400, 400));
     this.panelDisplay.add(pane, "Center");
-    //this.panelDisplay.add((Component)this.histogramPanel.getToolBar(), "North");
+    this.panelDisplay.add((Component)this.mapPanel.getToolBar(), "North");
     this.panelDisplay.add(this.brushesPanel, "South");
     setLocation(0, 100);
     getContentPane().add(this.panelDisplay);
@@ -216,5 +224,35 @@ public class JWAC_MapFrame extends JFrame implements Listener {
   public Vector<Partition> getSelectedPartitions() {
     //return this.histogramPanel.getModel().getSelectedPartitions();
     return new Vector<Partition>();
+  }
+
+  public static class JWAC_MapPanel extends JPanel implements ActionListener {
+      private JToolBar toolbar;
+      private JFrame parentFrame;
+
+      public JWAC_MapPanel() {
+          this.toolbar = new JToolBar();
+          this.constructMapToolbar(this.toolbar);
+
+      }
+
+      private void constructMapToolbar(JToolBar toolbar) {
+
+      }
+
+      public void actionPerformed(ActionEvent e) {
+
+      }
+
+      public void setParentFrame(JFrame parentFrame) {
+          this.parentFrame = parentFrame;
+      }
+
+      public JToolBar getToolBar() {
+          return this.toolbar;
+      }
+
+
+
   }
 }
