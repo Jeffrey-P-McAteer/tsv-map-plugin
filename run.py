@@ -80,9 +80,10 @@ def main(args=sys.argv):
   else:
     # perform build
     src_java_files = [
-      x for x in glob.glob('src/*.java', recursive=True)
+      x for x in glob.glob('src/**/*.java', recursive=True)
     ]
     tsv_classpath = [
+      os.path.join(tsv_dir, 'dist'),
       os.path.join(tsv_dir, 'dist', 'atsv.jar'),
       os.path.join(tsv_dir, 'dist', 'parser.jar'),
     ]
@@ -93,18 +94,19 @@ def main(args=sys.argv):
           '-cp', os.pathsep.join(tsv_classpath),
           *src_java_files
       )
+    
+    # Copy icon resource
+    shutil.copy(os.path.join('src', 'JWACMapPlot.gif'), os.path.join(tsv_map_plusin_dist, 'JWACMapPlot.gif'))
 
   # Add our dist/ to the plugin class path
-  tsv_classpath.append(
-    tsv_map_plusin_dist
-  )
+  tsv_classpath.insert(0, tsv_map_plusin_dist)
 
   print_and_run(
     java_exe,
     '-cp', os.pathsep.join(tsv_classpath),
     '-Xms4G', '-Xmx8G', '-Dsun.java2d.ddoffscreen=true', '-Dsun.java2d.gdiblit=true',
-    #'DataVis' # Name of TSV class with main() defined
-    'DataVisWithMap' # Our copy of DataVis
+    # 'DataVis' # Name of TSV class with main() defined
+    'DataVisWithOverride'
   )
 
 
