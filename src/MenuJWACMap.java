@@ -17,7 +17,7 @@ public class MenuJWACMap extends ATSVMenuControls {
     this.menuItem.setEnabled(false);
     this.menuItem.addActionListener(new ActionListener() {
           public void actionPerformed(ActionEvent e) {
-            HistogramFrame frame = new HistogramFrame(SessionObjects.getDefaultDS());
+            JWAC_MapFrame frame = new JWAC_MapFrame(SessionObjects.getDefaultDS());
             frame.setVisible(true);
           }
         });
@@ -27,7 +27,7 @@ public class MenuJWACMap extends ATSVMenuControls {
     this.button.addActionListener(new ActionListener() {
           public void actionPerformed(ActionEvent e) {
             System.out.println("TODO build JWAC map UI; SessionObjects.getDefaultDS() = "+SessionObjects.getDefaultDS());
-            HistogramFrame frame = new HistogramFrame(SessionObjects.getDefaultDS());
+            JWAC_MapFrame frame = new JWAC_MapFrame(SessionObjects.getDefaultDS());
             frame.setVisible(true);
           }
         });

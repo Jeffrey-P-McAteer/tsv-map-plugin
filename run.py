@@ -106,7 +106,8 @@ def main(args=sys.argv):
     '-cp', os.pathsep.join(tsv_classpath),
     '-Xms4G', '-Xmx8G', '-Dsun.java2d.ddoffscreen=true', '-Dsun.java2d.gdiblit=true',
     # 'DataVis' # Name of TSV class with main() defined
-    'DataVisWithOverride'
+    'DataVisWithOverride',
+    os.path.join(tsv_dir, 'data', 'carDatabase', 'CarData-updated.csv')
   )
 
 
