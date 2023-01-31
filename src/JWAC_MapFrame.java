@@ -11,6 +11,8 @@ import java.util.Vector;
 import javax.swing.Box;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JSlider;
+import javax.swing.JLabel;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -43,8 +45,8 @@ public class JWAC_MapFrame extends JFrame implements Listener {
   public JWAC_MapFrame(DesignSpace desSpace) {
     initializeFrame();
     setDesignSpace(desSpace);
-    setMaximumSize(new Dimension(600, 600));
-    pack();
+    //setMaximumSize(new Dimension(600, 600));
+    //pack();
   }
   
   public void initializeFrame() {
@@ -52,29 +54,20 @@ public class JWAC_MapFrame extends JFrame implements Listener {
     this.panelDisplay = new JPanel();
     this.panelDisplay.setLayout(new BorderLayout());
     this.mapPanel = new JWAC_MapPanel();
-    // this.histogramPanel.getModel().setShowLabels(true);
     this.mapPanel.setParentFrame(this);
-    // this.histogramPanel.getToolBar().add(Box.createHorizontalStrut(10));
-    // this.histogramPanel.getToolBar().addToolBarItem(this.brushSelection);
-    this.brushSelection.addMouseListener(new MouseAdapter() {
-          public void mouseClicked(MouseEvent e) {
-            if (!e.isMetaDown()) {
-              JWAC_MapFrame.this.displayBrushPrefSelection();
-            } else {
-              //JWAC_MapFrame.this.histogramPanel.getModel().setDisplayBrushes(!JWAC_MapFrame.this.histogramPanel.getModel().isDisplayBrushes());
-              JWAC_MapFrame.this.refreshImageOfBrushControls();
-            } 
-          }
-        });
-    JScrollPane pane = new JScrollPane(this.mapPanel);
-    pane.setSize(new Dimension(400, 400));
-    this.panelDisplay.add(pane, "Center");
+    //this.mapPanel.getToolBar().add(Box.createHorizontalStrut(10));
+    
+    // JScrollPane pane = new JScrollPane(this.mapPanel);
+    // pane.setSize(new Dimension(400, 400));
+    this.panelDisplay.add(this.mapPanel, "Center");
     this.panelDisplay.add((Component)this.mapPanel.getToolBar(), "North");
     this.panelDisplay.add(this.brushesPanel, "South");
     setLocation(0, 100);
     getContentPane().add(this.panelDisplay);
+    this.setSize(750, 500);
     pack();
     setVisible(false);
+    this.setSize(750, 500);
   }
   
   public JPanel getPanelDisplay() {
@@ -227,46 +220,87 @@ public class JWAC_MapFrame extends JFrame implements Listener {
   }
 
   public static class JWAC_MapPanel extends JPanel implements ActionListener {
-      private JToolBar toolbar;
+      private JToolBar toolbar; // above us in UI parent
       private JFrame parentFrame;
 
       private com.kitfox.svg.SVGUniverse svg_universe;
+      //private com.kitfox.svg.SVGDisplayPanel svg_view;
 
       public JWAC_MapPanel() {
+          this.setLayout(new BorderLayout());
+
           this.toolbar = new JToolBar();
           this.constructMapToolbar(this.toolbar);
+
           this.svg_universe = new com.kitfox.svg.SVGUniverse();
           this.constructPanelUI(this.svg_universe);
+
+          this.setSize(750, 500);
       }
 
       private void constructMapToolbar(JToolBar toolbar) {
+        // JButton test_btn = new JButton("Test Button");
+        // test_btn.addActionListener((event) -> {
+        //   System.out.println("test_btn clicked! event="+event);
+        // });
+        // toolbar.add(test_btn);
 
+        // JLabel scale_label = new JLabel("Map scale: ");
+        // toolbar.add(scale_label);
+        // JSlider scale_slider = new JSlider();
+        // scale_slider.setMinimum(0);
+        // scale_slider.setMaximum(100);
+        // scale_slider.setValue(50);
+        // scale_slider.setOrientation(JSlider.HORIZONTAL);
+        // scale_slider.setPreferredSize(new Dimension(200, 20));
+        // scale_slider.addChangeListener((evt) -> {
+        //   if (this.svg_view != null) {
+        //     this.svg_view.setScale( (float) scale_slider.getValue() / 100.0f );
+        //   }
+        // });
+
+        // toolbar.add(scale_slider);
       }
 
       private void constructPanelUI(com.kitfox.svg.SVGUniverse svg_universe) {
           try {
-            java.net.URI svg = svg_universe.loadSVG(
-                //new java.net.URL("https://upload.wikimedia.org/wikipedia/commons/4/4d/BlankMap-World.svg")
-                new java.net.URL("https://simplemaps.com/static/demos/resources/svg-library/svgs/world.svg")
-            );
-            com.kitfox.svg.SVGDiagram diagram = svg_universe.getDiagram(svg);
+            // java.net.URI svg = svg_universe.loadSVG(
+            //     //new java.net.URL("https://upload.wikimedia.org/wikipedia/commons/4/4d/BlankMap-World.svg")
+            //     new java.net.URL("https://simplemaps.com/static/demos/resources/svg-library/svgs/world.svg")
+            // );
 
-            com.kitfox.svg.SVGDisplayPanel view = new com.kitfox.svg.SVGDisplayPanel();
-            view.setDiagram(diagram);
+            // java.net.URI svg = svg_universe.loadSVG( // From https://upload.wikimedia.org/wikipedia/commons/8/80/World_map_-_low_resolution.svg
+            //   getClass().getResource("/simple_world_map.svg")
+            // );
+
+            //com.kitfox.svg.SVGDiagram diagram = svg_universe.getDiagram(svg);
+
+            // svg_view = new com.kitfox.svg.SVGDisplayPanel();
+            // svg_view.setDiagram(diagram);
+            // svg_view.setScale(0.5); // to match scale bar init
+            // this.add(svg_view);
+
+            com.kitfox.svg.app.beans.SVGPanel svg_panel = new com.kitfox.svg.app.beans.SVGPanel();
+            //svg_panel.setSvgURI(svg);
+            svg_panel.setSvgResourcePath("/simple_world_map.svg");
+            svg_panel.setAutosize(com.kitfox.svg.app.beans.SVGPanel.AUTOSIZE_STRETCH);
             
-            this.add(view);
+            //svg_panel.setSize(200, 200);
+            //svg_panel.setPreferredSize(new Dimension(200, 200));
+
+            this.add(svg_panel, BorderLayout.CENTER);
 
             this.repaint();
 
           }
           catch (Exception e) {
-            System.out.println("constructPanelUI e = "+e);
+            e.printStackTrace();
           }
       }
 
       public void actionPerformed(ActionEvent e) {
           System.out.println("JWAC_MapPanel actionPerformed e="+e);
-
+          
       }
 
       public void setParentFrame(JFrame parentFrame) {

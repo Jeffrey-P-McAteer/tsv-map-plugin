@@ -118,6 +118,7 @@ def main(args=sys.argv):
     
     # Copy icon resource
     shutil.copy(os.path.join('src', 'JWACMapPlot.gif'), os.path.join(tsv_map_plugin_dist, 'JWACMapPlot.gif'))
+    shutil.copy(os.path.join('src', 'simple_world_map.svg'), os.path.join(tsv_map_plugin_dist, 'simple_world_map.svg'))
 
   # Add our dist/ to the plugin class path
   tsv_classpath.insert(0, tsv_map_plugin_dist)
