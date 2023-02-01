@@ -26,6 +26,7 @@ import nddv.data.session.SessionObjects;
 import nddv.useroperations.ExportStringtoFile;
 
 import javax.swing.JToolBar;
+import javax.swing.JComboBox;
 import java.awt.Color;
 import java.awt.GridLayout;
 import java.awt.Point;
@@ -190,17 +191,24 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         System.out.println("TODO De-select all svg polygons");
       }
       else {
+        // Get value of toolbar_map_value_selector
+        int column_i_to_use = this.mapPanel.toolbar_map_value_selector.getSelectedIndex();
+        String column_name_to_use = ""+this.mapPanel.toolbar_map_value_selector.getSelectedItem();
+
+        String selected_country_name = this.ds.getColumn(column_i_to_use).getStringValue(selected_data_idx);
+        System.out.println("TODO highlight the country "+selected_country_name);
+
         // this.ds.getModel().;
         //System.out.println("TODO figure out country name from selected_data_idx="+selected_data_idx);
-        for (int i=0; i<20; i+=1) {
-          try {
-            String col_name = this.ds.getColumn(i).getTitle();
-            String col_val = this.ds.getColumn(i).getStringValue(selected_data_idx);
-            System.out.println("Selected row="+selected_data_idx+" "+col_name+" = "+col_val);
-          }
-          catch (Exception e) { e.printStackTrace(); }
+        // for (int i=0; i<20; i+=1) {
+        //   try {
+        //     String col_name = this.ds.getColumn(i).getTitle();
+        //     String col_val = this.ds.getColumn(i).getStringValue(selected_data_idx);
+        //     System.out.println("Selected row="+selected_data_idx+" "+col_name+" = "+col_val);
+        //   }
+        //   catch (Exception e) { e.printStackTrace(); }
 
-        }
+
       }
 
       // Lookup svg polygon
@@ -254,6 +262,8 @@ public class JWAC_MapFrame extends JFrame implements Listener {
       private JToolBar toolbar; // above us in UI parent
       private JFrame parentFrame;
 
+      public JComboBox<String> toolbar_map_value_selector;
+
       private DesignSpace ds;
 
       private com.kitfox.svg.SVGUniverse svg_universe;
@@ -262,6 +272,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
       public JWAC_MapPanel() {
           this.setLayout(new BorderLayout());
 
+          this.toolbar_map_value_selector = new JComboBox<String>();
           this.toolbar = new JToolBar();
           this.constructMapToolbar(this.toolbar);
 
@@ -292,7 +303,10 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         //   }
         // });
 
-        // toolbar.add(scale_slider);
+        JLabel field_label = new JLabel("Country Name Field: ");
+        toolbar.add(field_label);
+        toolbar.add(this.toolbar_map_value_selector);
+        
       }
 
       private void constructPanelUI(com.kitfox.svg.SVGUniverse svg_universe) {
@@ -346,7 +360,21 @@ public class JWAC_MapFrame extends JFrame implements Listener {
 
       public void setDesignSpace(DesignSpace ds) {
         this.ds = ds;
-        // TODO listen to events?
+        if (this.ds == null) {
+          return;
+        }
+
+        // Grab all keys from all records, populate drop-down
+        String[] all_property_names = new String[this.ds.getModel().getDimension()];
+        for (int col_i=0; col_i < this.ds.getModel().getDimension(); col_i += 1) {
+          all_property_names[col_i] = this.ds.getModel().getColumn(col_i).getTitle();
+        }
+        // Hack and a half to udpate in-place
+        this.toolbar_map_value_selector.setModel(new JComboBox<String>(all_property_names).getModel());
+
+
+
+
 
       }
 
