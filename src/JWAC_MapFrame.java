@@ -41,8 +41,11 @@ public class JWAC_MapFrame extends JFrame implements Listener {
   private JPanel brushesPanel = new JPanel();
   
   private JPanel panelDisplay;
+
+  private DesignSpace ds;
   
   public JWAC_MapFrame(DesignSpace desSpace) {
+    this.ds = desSpace;
     initializeFrame();
     setDesignSpace(desSpace);
     //setMaximumSize(new Dimension(600, 600));
@@ -75,12 +78,14 @@ public class JWAC_MapFrame extends JFrame implements Listener {
   }
   
   public void setDesignSpace(DesignSpace ds) {
+    this.ds = ds;
     ds.registerListener(this);
     this.mapPanel.setDesignSpace(ds);
     setTitle("JWAC Map Plots : " + ds.getPointerToData());
     addWindowListener(new WindowAdapter() {
           public void windowClosing(WindowEvent e) {
             //HistogramFrame.this.deletePlot();
+            ds.removeListener(JWAC_MapFrame.this);
           }
         });
     setLinkedIcon();
@@ -176,6 +181,23 @@ public class JWAC_MapFrame extends JFrame implements Listener {
   
   public void pickOperation(String type) {
     //this.histogramPanel.brushUpdate();
+    System.out.println("JWAC_MapFrame.pickOperation("+type+")");
+
+    if (type != null && type.equals("PointSelect")) {
+      // Get selected data record
+      int selected_data_idx = this.ds.getSelectedIndex();
+      if (selected_data_idx < 0) {
+        System.out.println("TODO De-select all svg polygons");
+      }
+      else {
+        // this.ds.getModel().;
+        System.out.println("TODO figure out country name from selected_data_idx="+selected_data_idx);
+      }
+
+      // Lookup svg polygon
+
+    }
+
   }
   
   public void updateBrushPreferenceControls() {}
@@ -316,7 +338,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
       public void setDesignSpace(DesignSpace ds) {
         this.ds = ds;
         // TODO listen to events?
-        
+
       }
 
 
