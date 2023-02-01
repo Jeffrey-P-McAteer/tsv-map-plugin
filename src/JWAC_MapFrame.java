@@ -200,6 +200,8 @@ public class JWAC_MapFrame extends JFrame implements Listener {
           e2.printStackTrace();
         }
       }
+      this.mapPanel.svg_panel.repaint();
+      this.mapPanel.repaint();
     }
 
     if (type != null && type.equals("PointSelect")) {
@@ -218,6 +220,8 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         System.out.println("TODO highlight the country "+selected_country_name+" on "+this.mapPanel.svg_diagram);
         System.out.println("diagram should be "+this.mapPanel.svg_universe.getDiagram(this.mapPanel.svg_panel.getSvgURI()));
         // this.svg_universe.getDiagram(svg_panel.getSvgURI());
+
+        this.mapPanel.svg_diagram = com.kitfox.svg.SVGCache.getSVGUniverse().getDiagram(this.mapPanel.svg_panel.getSvgURI()); // Wierdness that fixes painting
 
         com.kitfox.svg.SVGElement element = this.mapPanel.svg_diagram.getElement(selected_country_name);
         if (element == null) {
@@ -239,6 +243,8 @@ public class JWAC_MapFrame extends JFrame implements Listener {
               e2.printStackTrace();
             }
           }
+          this.mapPanel.svg_panel.repaint();
+          this.mapPanel.repaint();
         }
 
         last_picked_svg_element = element;
@@ -311,6 +317,8 @@ public class JWAC_MapFrame extends JFrame implements Listener {
       public JComboBox<String> toolbar_map_value_selector;
 
       private DesignSpace ds;
+
+      public java.net.URI svg_uri;
 
       public com.kitfox.svg.SVGUniverse svg_universe;
       
@@ -388,8 +396,10 @@ public class JWAC_MapFrame extends JFrame implements Listener {
 
             this.repaint();
 
+            this.svg_uri = svg_panel.getSvgURI();
+
             // svgSalamander guarantees this reference will be the same that the GUI uses.
-            this.svg_diagram = this.svg_universe.getDiagram(svg_panel.getSvgURI());
+            this.svg_diagram = this.svg_universe.getDiagram(this.svg_uri);
 
           }
           catch (Exception e) {
