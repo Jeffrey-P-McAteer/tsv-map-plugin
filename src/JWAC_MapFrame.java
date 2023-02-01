@@ -191,7 +191,16 @@ public class JWAC_MapFrame extends JFrame implements Listener {
       }
       else {
         // this.ds.getModel().;
-        System.out.println("TODO figure out country name from selected_data_idx="+selected_data_idx);
+        //System.out.println("TODO figure out country name from selected_data_idx="+selected_data_idx);
+        for (int i=0; i<20; i+=1) {
+          try {
+            String col_name = this.ds.getColumn(i).getTitle();
+            String col_val = this.ds.getColumn(i).getStringValue(selected_data_idx);
+            System.out.println("Selected row="+selected_data_idx+" "+col_name+" = "+col_val);
+          }
+          catch (Exception e) { e.printStackTrace(); }
+
+        }
       }
 
       // Lookup svg polygon
