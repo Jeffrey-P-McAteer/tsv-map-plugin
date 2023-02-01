@@ -26,7 +26,6 @@ public class MenuJWACMap extends ATSVMenuControls {
     this.button.setEnabled(false);
     this.button.addActionListener(new ActionListener() {
           public void actionPerformed(ActionEvent e) {
-            System.out.println("TODO build JWAC map UI; SessionObjects.getDefaultDS() = "+SessionObjects.getDefaultDS());
             JWAC_MapFrame frame = new JWAC_MapFrame(SessionObjects.getDefaultDS());
             frame.setVisible(true);
           }

@@ -76,7 +76,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
   
   public void setDesignSpace(DesignSpace ds) {
     ds.registerListener(this);
-    //this.histogramPanel.setDesignSpace(ds);
+    this.mapPanel.setDesignSpace(ds);
     setTitle("JWAC Map Plots : " + ds.getPointerToData());
     addWindowListener(new WindowAdapter() {
           public void windowClosing(WindowEvent e) {
@@ -223,6 +223,8 @@ public class JWAC_MapFrame extends JFrame implements Listener {
       private JToolBar toolbar; // above us in UI parent
       private JFrame parentFrame;
 
+      private DesignSpace ds;
+
       private com.kitfox.svg.SVGUniverse svg_universe;
       //private com.kitfox.svg.SVGDisplayPanel svg_view;
 
@@ -309,6 +311,12 @@ public class JWAC_MapFrame extends JFrame implements Listener {
 
       public JToolBar getToolBar() {
           return this.toolbar;
+      }
+
+      public void setDesignSpace(DesignSpace ds) {
+        this.ds = ds;
+        // TODO listen to events?
+        
       }
 
 
