@@ -180,15 +180,33 @@ public class JWAC_MapFrame extends JFrame implements Listener {
     deletePlot();
   }
   
+  com.kitfox.svg.SVGElement last_picked_svg_element = null;
+
   public void pickOperation(String type) {
     //this.histogramPanel.brushUpdate();
     System.out.println("JWAC_MapFrame.pickOperation("+type+")");
+
+    if (last_picked_svg_element != null) {
+      // reset it
+      try {
+        last_picked_svg_element.setAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, "red");
+      }
+      catch (Exception e) {
+        e.printStackTrace();
+        try {
+          last_picked_svg_element.addAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, "red");
+        }
+        catch (Exception e2) {
+          e2.printStackTrace();
+        }
+      }
+    }
 
     if (type != null && type.equals("PointSelect")) {
       // Get selected data record
       int selected_data_idx = this.ds.getSelectedIndex();
       if (selected_data_idx < 0) {
-        System.out.println("TODO De-select all svg polygons");
+        System.out.println("TODO De-select all svg polygons on "+this.mapPanel.svg_diagram);
       }
       else {
         // Get value of toolbar_map_value_selector
@@ -196,7 +214,35 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         String column_name_to_use = ""+this.mapPanel.toolbar_map_value_selector.getSelectedItem();
 
         String selected_country_name = this.ds.getColumn(column_i_to_use).getStringValue(selected_data_idx);
-        System.out.println("TODO highlight the country "+selected_country_name);
+
+        System.out.println("TODO highlight the country "+selected_country_name+" on "+this.mapPanel.svg_diagram);
+        System.out.println("diagram should be "+this.mapPanel.svg_universe.getDiagram(this.mapPanel.svg_panel.getSvgURI()));
+        // this.svg_universe.getDiagram(svg_panel.getSvgURI());
+
+        com.kitfox.svg.SVGElement element = this.mapPanel.svg_diagram.getElement(selected_country_name);
+        if (element == null) {
+          element = this.mapPanel.svg_diagram.getElement(selected_country_name.toLowerCase());
+        }
+        
+        System.out.println("element = "+element);
+
+        if (element != null) {
+          try {
+            element.setAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, "black");
+          }
+          catch (Exception e) {
+            e.printStackTrace();
+            try {
+              element.addAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, "black");
+            }
+            catch (Exception e2) {
+              e2.printStackTrace();
+            }
+          }
+        }
+
+        last_picked_svg_element = element;
+
 
         // this.ds.getModel().;
         //System.out.println("TODO figure out country name from selected_data_idx="+selected_data_idx);
@@ -266,8 +312,11 @@ public class JWAC_MapFrame extends JFrame implements Listener {
 
       private DesignSpace ds;
 
-      private com.kitfox.svg.SVGUniverse svg_universe;
-      //private com.kitfox.svg.SVGDisplayPanel svg_view;
+      public com.kitfox.svg.SVGUniverse svg_universe;
+      
+      public com.kitfox.svg.app.beans.SVGPanel svg_panel;
+
+      public com.kitfox.svg.SVGDiagram svg_diagram;
 
       public JWAC_MapPanel() {
           this.setLayout(new BorderLayout());
@@ -327,7 +376,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
             // svg_view.setScale(0.5); // to match scale bar init
             // this.add(svg_view);
 
-            com.kitfox.svg.app.beans.SVGPanel svg_panel = new com.kitfox.svg.app.beans.SVGPanel();
+            this.svg_panel = new com.kitfox.svg.app.beans.SVGPanel();
             //svg_panel.setSvgURI(svg);
             svg_panel.setSvgResourcePath("/simple_world_map.svg");
             svg_panel.setAutosize(com.kitfox.svg.app.beans.SVGPanel.AUTOSIZE_STRETCH);
@@ -338,6 +387,9 @@ public class JWAC_MapFrame extends JFrame implements Listener {
             this.add(svg_panel, BorderLayout.CENTER);
 
             this.repaint();
+
+            // svgSalamander guarantees this reference will be the same that the GUI uses.
+            this.svg_diagram = this.svg_universe.getDiagram(svg_panel.getSvgURI());
 
           }
           catch (Exception e) {
