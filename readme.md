@@ -7,5 +7,5 @@ main class `DataVisWithOverride` instead of the original TSV main class `DataVis
 
 # Demo
 
-![demo_2023-02-01_19-06](demo_2023-02-01_19-06.mp4)
+![demo_2023-02-01_19-06](demo_2023-02-01_19-06.gif)
 
