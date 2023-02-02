@@ -5,6 +5,7 @@ import subprocess
 import traceback
 import shutil
 import glob
+import zipfile
 
 import urllib.request
 
@@ -123,14 +124,100 @@ def main(args=sys.argv):
   # Add our dist/ to the plugin class path
   tsv_classpath.insert(0, tsv_map_plugin_dist)
 
-  print_and_run(
-    java_exe,
-    '-cp', os.pathsep.join(tsv_classpath),
-    '-Xms4G', '-Xmx8G', '-Dsun.java2d.ddoffscreen=true', '-Dsun.java2d.gdiblit=true',
-    # 'DataVis' # Name of TSV class with main() defined
-    'DataVisWithOverride',
-    os.path.join(tsv_dir, 'data', 'carDatabase', 'CarData-updated.csv')
-  )
+  if 'dist' in args:
+    if sys.version_info.major == 3 and sys.version_info.minor < 11:
+      print('')
+      print('WARNING: your version of python ({}.{}) is too old to support .zip files with directories!'.format(sys.version_info.major, sys.version_info.minor))
+      print('The following distribution process will likely fail.')
+      print('Please perform this step with a copy of python 3.11+, which supports writing zip files with directories.')
+      print('')
+
+    # read from tsv/dist/atsv.jar as zip, write to tsv/dist/jwac_atsv.jar with original contents + plugin files under dist/*.{!jar,!zip}
+    atsv_jar = os.path.join(tsv_dir, 'dist', 'atsv.jar')
+    atsv_jar = os.path.join(tsv_dir, 'dist', 'atsv.jar')
+
+    jwac_atsv_jar = os.path.join(tsv_dir, 'dist', 'jwac_atsv.jar')
+    if os.path.exists(jwac_atsv_jar):
+      os.remove(jwac_atsv_jar)
+    
+    print('Distributing plugin into {}'.format(jwac_atsv_jar))
+    with zipfile.ZipFile(jwac_atsv_jar, 'w') as jwac_atsv_z:
+      # Copy in svg_salamander_jar
+      with zipfile.ZipFile(svg_salamander_jar, 'r') as svg_z:
+        for filename in svg_z.namelist():
+          if 'META-INF' in filename and 'MANIFEST' in filename:
+            continue # Not interested in this one
+          print('Copying {}'.format(filename))
+          with svg_z.open(filename) as src_fd:
+            try:
+              with jwac_atsv_z.open(filename, 'w') as dst_fd:
+                dst_fd.write( src_fd.read() )
+            except:
+              jwac_atsv_z.mkdir(os.path.dirname(filename))
+              with jwac_atsv_z.open(filename, 'w') as dst_fd:
+                dst_fd.write( src_fd.read() )
+                
+      with zipfile.ZipFile(atsv_jar, 'r') as atsv_z:
+        for filename in atsv_z.namelist():
+          print('Copying {}'.format(filename))
+          if 'META-INF' in filename and 'MANIFEST' in filename:
+            # We write our own to override the main class from 'DataVis' to 'DataVisWithOverride'
+            with jwac_atsv_z.open(filename, 'w') as dst_fd:
+              dst_fd.write(('''
+Manifest-Version: 1.0
+Ant-Version: Apache Ant 1.10.1
+Created-By: 1.8.0_261-b12 (Oracle Corporation)
+Main-Class: DataVisWithOverride
+              '''.strip()+'\n\n\r\n').encode('utf-8'))
+          else:
+            with atsv_z.open(filename) as src_fd:
+              # if len(os.path.dirname(filename)) > 2:
+              #   jwac_atsv_z.mkdir(os.path.dirname(filename))
+              try:
+                with jwac_atsv_z.open(filename, 'w') as dst_fd:
+                  dst_fd.write( src_fd.read() )
+              except:
+                jwac_atsv_z.mkdir(os.path.dirname(filename))
+                with jwac_atsv_z.open(filename, 'w') as dst_fd:
+                  dst_fd.write( src_fd.read() )
+
+      # Done copying initial files, let's copy in our built plugin files
+      for filename in os.listdir('dist'):
+        # Skip assets we know we did not build
+        if filename.lower().endswith('.zip'):
+          continue
+        if filename.lower().endswith('.jar'):
+          continue
+        if os.path.isdir(os.path.join('dist', filename)):
+          continue # Recursion not supported
+        
+        with open(os.path.join('dist', filename), 'rb') as src_fd:
+          print('Adding {}'.format(filename))
+          with jwac_atsv_z.open(filename, 'w') as dst_fd:
+              dst_fd.write( src_fd.read() )
+    
+    print('{} created!'.format(jwac_atsv_jar))
+    
+    # Then write tsv/runJWAC_ATSV.bat w/ different PATH and main class name
+    run_jwac_atsv_bat = os.path.join(tsv_dir, 'runJWAC_ATSV.bat')
+    print('Writing {}'.format(run_jwac_atsv_bat))
+    with open(run_jwac_atsv_bat, 'w') as fd:
+      fd.write('''
+set PATH=jre/bin;jnilib;jnilib/vtk
+java -XshowSettings:properties -version
+java -Xms4G -Xmx8G -Dsun.java2d.ddoffscreen=false -Dsun.java2d.gdiblit=false -jar dist/jwac_atsv.jar ./data/carDatabase/CarData-updated.csv
+pause
+'''.strip())
+
+  else:
+    print_and_run(
+      java_exe,
+      '-cp', os.pathsep.join(tsv_classpath),
+      '-Xms4G', '-Xmx8G', '-Dsun.java2d.ddoffscreen=true', '-Dsun.java2d.gdiblit=true',
+      # 'DataVis' # Name of TSV class with main() defined
+      'DataVisWithOverride',
+      os.path.join(tsv_dir, 'data', 'carDatabase', 'CarData-updated.csv')
+    )
 
 
 if __name__ == '__main__':
