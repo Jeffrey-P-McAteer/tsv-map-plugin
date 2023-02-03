@@ -75,7 +75,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
     this.setSize(750, 500);
     pack();
     setVisible(false);
-    this.setSize(750, 500);
+    this.setSize(950, 500);
   }
   
   public JPanel getPanelDisplay() {
@@ -212,7 +212,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
       // Get selected data record
       int selected_data_idx = this.ds.getSelectedIndex();
       if (selected_data_idx < 0) {
-        System.out.println("TODO De-select all svg polygons on "+this.mapPanel.svg_diagram);
+
       }
       else {
         // Get value of toolbar_map_value_selector
@@ -221,7 +221,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
 
         String selected_country_name = this.ds.getColumn(column_i_to_use).getStringValue(selected_data_idx);
 
-        System.out.println("TODO highlight the country "+selected_country_name+" on "+this.mapPanel.svg_diagram);
+        System.out.println("Highlighing the the country "+selected_country_name+"");
         System.out.println("diagram should be "+this.mapPanel.svg_universe.getDiagram(this.mapPanel.svg_panel.getSvgURI()));
         // this.svg_universe.getDiagram(svg_panel.getSvgURI());
 
@@ -231,10 +231,9 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         if (element == null) {
           element = this.mapPanel.svg_diagram.getElement(selected_country_name.toLowerCase());
         }
-        
-        System.out.println("element = "+element);
 
         if (element != null) {
+          System.out.println("Found "+selected_country_name+", element = "+element);
           try {
             element.setAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, "black");
           }
@@ -249,6 +248,9 @@ public class JWAC_MapFrame extends JFrame implements Listener {
           }
           this.mapPanel.svg_panel.repaint();
           this.mapPanel.repaint();
+        }
+        else {
+          System.out.println(""+selected_country_name+" does not exist in this map!");
         }
 
         last_picked_svg_element = element;
@@ -343,44 +345,52 @@ public class JWAC_MapFrame extends JFrame implements Listener {
           this.svg_universe = new com.kitfox.svg.SVGUniverse();
           this.constructPanelUI(this.svg_universe);
 
-          this.setSize(750, 500);
+          this.setSize(950, 500);
       }
 
       private static void lockInPreferredSize(javax.swing.JComponent component) {
         component.setMaximumSize( component.getPreferredSize() );
       }
 
+      private static JPanel flowLeftWrapper(javax.swing.JComponent component) {
+        JPanel holder = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
+        lockInPreferredSize(component);
+        holder.add(component);
+        return holder;
+      }
+
       private void constructMapToolbar(JToolBar toolbar) {
-        JPanel field_label_holder = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
         JLabel field_label = new JLabel("Country Name Field: ");
-        lockInPreferredSize(field_label);
-        field_label_holder.add(field_label);
-        toolbar.add(field_label_holder);
+        toolbar.add(flowLeftWrapper(field_label));
 
-        JPanel name_dropdown_holder = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
-        name_dropdown_holder.add(this.toolbar_map_value_selector);
         this.toolbar_map_value_selector.setMaximumRowCount(18); // show lots of rows
-        lockInPreferredSize(this.toolbar_map_value_selector);
-        toolbar.add(name_dropdown_holder);
-
-        //toolbar.add( Box.createHorizontalStrut(5) );
-        //toolbar.add( Box.createVerticalStrut(5) );
+        toolbar.add(this.toolbar_map_value_selector);
 
         JButton svg_pick_btn = new JButton("Select .svg map file");
         svg_pick_btn.addActionListener((evt) -> {
           this.pick_new_svg_file();
         });
         svg_pick_btn.setBorder( javax.swing.BorderFactory.createBevelBorder(0) );
-        lockInPreferredSize(svg_pick_btn);
-        toolbar.add(svg_pick_btn);
+        toolbar.add(flowLeftWrapper(svg_pick_btn));
 
-        //short pixels_to_eat = Short.MAX_VALUE;
-        // short pixels_to_eat = 1600;
-        // toolbar.add(new Box.Filler( // eats space at bottom to prevent children from getting fat
-        //     new Dimension(0, 0),
-        //     new Dimension(0, pixels_to_eat),
-        //     new Dimension(0, pixels_to_eat))
-        // );
+        JButton display_ids_btn = new JButton("Display all path IDs in map");
+        display_ids_btn.addActionListener((evt) -> {
+          String all_child_ids = this.get_child_ids_string();
+          //System.out.println("all_child_ids="+all_child_ids);
+          String temp_id_file = System.getProperty("java.io.tmpdir")+File.separator+"tsv_svg_all_ids_file.txt";
+          try {
+            java.io.FileOutputStream outputStream = new java.io.FileOutputStream(temp_id_file);
+            outputStream.write( all_child_ids.getBytes() );
+            outputStream.close();
+            // Tell OS to open in default handler
+            java.awt.Desktop.getDesktop().edit(new File(temp_id_file));
+          }
+          catch (Exception e) {
+            e.printStackTrace();
+          }
+        });
+        display_ids_btn.setBorder( javax.swing.BorderFactory.createBevelBorder(0) );
+        toolbar.add(flowLeftWrapper(display_ids_btn));
         
       }
 
@@ -404,7 +414,33 @@ public class JWAC_MapFrame extends JFrame implements Listener {
             System.out.println("Selected file: " + selectedFile.getAbsolutePath());
             this.svg_uri = selectedFile.toURI();
             this.svg_panel.setSvgURI(this.svg_uri);
+            // Update svg_diagram for things that will read it 
+            this.svg_diagram = com.kitfox.svg.SVGCache.getSVGUniverse().getDiagram(this.svg_panel.getSvgURI()); // Wierdness that fixes painting
+
         }
+      }
+
+      private String get_child_ids_string() {
+        return get_child_ids_string(null);
+      }
+
+      private String get_child_ids_string(com.kitfox.svg.Group parent) {
+        String child_ids = "";
+        if (this.svg_diagram != null) {
+          if (parent == null) {
+            parent = this.svg_diagram.getRoot();
+          }
+          for (int i=0; i<parent.getNumChildren(); i+=1) {
+            com.kitfox.svg.SVGElement child = parent.getChild(i);
+            if (child instanceof com.kitfox.svg.Group) {
+              child_ids += get_child_ids_string((com.kitfox.svg.Group) child);
+            }
+            else {
+              child_ids += child.getId()+"\n";
+            }
+          }
+        }
+        return child_ids;
       }
 
       private void constructPanelUI(com.kitfox.svg.SVGUniverse svg_universe) {
