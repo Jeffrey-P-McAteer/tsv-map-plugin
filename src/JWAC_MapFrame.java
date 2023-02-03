@@ -318,10 +318,13 @@ public class JWAC_MapFrame extends JFrame implements Listener {
 
       public com.kitfox.svg.SVGDiagram svg_diagram;
 
+      public JComboBox<String> toolbar_map_color_field_selector;
+
       public JWAC_MapPanel() {
           this.setLayout(new BorderLayout());
 
           this.toolbar_map_value_selector = new JComboBox<String>();
+          this.toolbar_map_color_field_selector = new JComboBox<String>();
           this.toolbar = new JToolBar();
           //this.toolbar.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
           this.toolbar.setLayout(new BoxLayout(this.toolbar, BoxLayout.Y_AXIS));
@@ -384,6 +387,12 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         });
         display_ids_btn.setBorder( javax.swing.BorderFactory.createBevelBorder(0) );
         toolbar.add(flowLeftWrapper(display_ids_btn));
+
+        JLabel color_field_label = new JLabel("Color (not yet done)");
+        toolbar.add(flowLeftWrapper(color_field_label));
+
+        this.toolbar_map_color_field_selector.setMaximumRowCount(18); // show lots of rows
+        toolbar.add(this.toolbar_map_color_field_selector);
         
       }
 
@@ -549,6 +558,14 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         }
         // Hack and a half to udpate in-place
         this.toolbar_map_value_selector.setModel(new JComboBox<String>(all_property_names).getModel());
+
+        // Hack and a half to udpate in-place
+        String[] constant_and_all_property_names = new String[1+all_property_names.length];
+        constant_and_all_property_names[0] = "Constant (red)";
+        for (int col_i=0; col_i < this.ds.getModel().getDimension(); col_i += 1) {
+          constant_and_all_property_names[col_i + 1] = constant_and_all_property_names[col_i];
+        }
+        this.toolbar_map_color_field_selector.setModel(new JComboBox<String>(all_property_names).getModel());
 
 
 
