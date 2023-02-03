@@ -260,6 +260,42 @@ public class JWAC_MapFrame extends JFrame implements Listener {
     }
 
   }
+
+  public void recolor_all_countries() {
+    try {
+      // Get column index, or mark all red if == -1
+      int color_column_i = this.mapPanel.toolbar_map_color_field_selector.getSelectedIndex() - 1 /* idx 0 == "Constant (red)", now it's == -1 */;
+      if (color_column_i >= 0) {
+        // For all data strings...
+        int num_rows = 0;
+        List<SVGElement> row_country_elements = new List<SVGElement>();
+        List<String> row_col_vals = new List<String>();
+        int country_col_i_to_use = this.mapPanel.toolbar_map_value_selector.getSelectedIndex();
+
+        for (int row_i=0; row_i < num_rows; row_i += 1) {
+          String row_col_val = this.ds.getColumn(color_column_i).getStringValue(row_i);
+          row_col_vals.add(row_col_val);
+          String row_country_name = this.ds.getColumn(country_col_i_to_use).getStringValue(row_i);
+          SVGElement row_country_elm = this.mapPanel.svg_diagram.getElement(row_country_name);
+          row_country_elements.add(row_country_elm);
+        }
+        
+        // row_col_vals holds value for each row by index, and row_country_elements
+        // contains either the SVG element to change the color of OR null.
+        
+
+
+      }
+      else {
+        this.mapPanel.set_all_children_in_ds_to_red_bg();
+      }
+      // Finally color any selected element
+      pickOperation("PointSelect");
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
   
   public void updateBrushPreferenceControls() {}
   
@@ -304,7 +340,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
 
   public static class JWAC_MapPanel extends JPanel implements ActionListener {
       private JToolBar toolbar; // above us in UI parent
-      private JFrame parentFrame;
+      private JWAC_MapFrame parentFrame;
 
       public JComboBox<String> toolbar_map_value_selector;
 
@@ -353,6 +389,11 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         toolbar.add(flowLeftWrapper(field_label));
 
         this.toolbar_map_value_selector.setMaximumRowCount(18); // show lots of rows
+        this.toolbar_map_value_selector.addActionListener((evt) -> {
+          if (this.parentFrame != null) {
+            this.parentFrame.pickOperation("PointSelect");
+          }
+        });
         toolbar.add(this.toolbar_map_value_selector);
 
         JButton svg_pick_btn = new JButton("Select .svg map file");
@@ -392,6 +433,11 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         toolbar.add(flowLeftWrapper(color_field_label));
 
         this.toolbar_map_color_field_selector.setMaximumRowCount(18); // show lots of rows
+        this.toolbar_map_color_field_selector.addActionListener((evt) -> {
+          if (this.parentFrame != null) {
+            this.parentFrame.recolor_all_countries();
+          }
+        });
         toolbar.add(this.toolbar_map_color_field_selector);
         
       }
@@ -537,7 +583,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
           
       }
 
-      public void setParentFrame(JFrame parentFrame) {
+      public void setParentFrame(JWAC_MapFrame parentFrame) {
           this.parentFrame = parentFrame;
       }
 
