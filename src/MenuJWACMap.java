@@ -11,7 +11,6 @@ import nddv.histogram.h1d.*; // TODO remove
 
 public class MenuJWACMap extends ATSVMenuControls {
   public MenuJWACMap() {
-    System.out.println("Constructing MenuJWACMap!");
     this.menuItem = new JMenuItem("JWAC Map Plots");
     this.menuItem.setMnemonic(72);
     this.menuItem.setEnabled(false);

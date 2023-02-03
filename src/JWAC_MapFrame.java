@@ -255,21 +255,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
 
         last_picked_svg_element = element;
 
-
-        // this.ds.getModel().;
-        //System.out.println("TODO figure out country name from selected_data_idx="+selected_data_idx);
-        // for (int i=0; i<20; i+=1) {
-        //   try {
-        //     String col_name = this.ds.getColumn(i).getTitle();
-        //     String col_val = this.ds.getColumn(i).getStringValue(selected_data_idx);
-        //     System.out.println("Selected row="+selected_data_idx+" "+col_name+" = "+col_val);
-        //   }
-        //   catch (Exception e) { e.printStackTrace(); }
-
-
       }
-
-      // Lookup svg polygon
 
     }
 
@@ -373,6 +359,13 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         svg_pick_btn.setBorder( javax.swing.BorderFactory.createBevelBorder(0) );
         toolbar.add(flowLeftWrapper(svg_pick_btn));
 
+        JButton svg_reset_btn = new JButton("Reset .svg map");
+        svg_reset_btn.addActionListener((evt) -> {
+          this.reset_svg_file();
+        });
+        svg_reset_btn.setBorder( javax.swing.BorderFactory.createBevelBorder(0) );
+        toolbar.add(flowLeftWrapper(svg_reset_btn));
+
         JButton display_ids_btn = new JButton("Display all path IDs in map");
         display_ids_btn.addActionListener((evt) -> {
           String all_child_ids = this.get_child_ids_string();
@@ -416,7 +409,19 @@ public class JWAC_MapFrame extends JFrame implements Listener {
             this.svg_panel.setSvgURI(this.svg_uri);
             // Update svg_diagram for things that will read it 
             this.svg_diagram = com.kitfox.svg.SVGCache.getSVGUniverse().getDiagram(this.svg_panel.getSvgURI()); // Wierdness that fixes painting
+            this.set_all_children_in_ds_to_red_bg();
+        }
+      }
 
+      private void reset_svg_file() {
+        try {
+          this.svg_panel.setSvgResourcePath("/simple_world_map.svg");
+          // Update svg_diagram for things that will read it 
+          this.svg_diagram = com.kitfox.svg.SVGCache.getSVGUniverse().getDiagram(this.svg_panel.getSvgURI()); // Wierdness that fixes painting
+          this.set_all_children_in_ds_to_red_bg();
+        }
+        catch (Exception e) {
+          e.printStackTrace();
         }
       }
 
@@ -441,6 +446,40 @@ public class JWAC_MapFrame extends JFrame implements Listener {
           }
         }
         return child_ids;
+      }
+
+      private void set_all_children_in_ds_to_red_bg() {
+        set_all_children_in_ds_to_red_bg(null);
+      }
+
+      private void set_all_children_in_ds_to_red_bg(com.kitfox.svg.Group parent) {
+        if (this.svg_diagram != null) {
+          if (parent == null) {
+            parent = this.svg_diagram.getRoot();
+          }
+          for (int i=0; i<parent.getNumChildren(); i+=1) {
+            com.kitfox.svg.SVGElement child = parent.getChild(i);
+            if (child instanceof com.kitfox.svg.Group) {
+              set_all_children_in_ds_to_red_bg((com.kitfox.svg.Group) child);
+            }
+            else {
+
+              try {
+                child.setAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, "red");
+              }
+              catch (Exception e) {
+                e.printStackTrace();
+                try {
+                  child.addAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, "red");
+                }
+                catch (Exception e2) {
+                  e2.printStackTrace();
+                }
+              }
+
+            }
+          }
+        }
       }
 
       private void constructPanelUI(com.kitfox.svg.SVGUniverse svg_universe) {
