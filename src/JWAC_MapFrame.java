@@ -27,6 +27,9 @@ import nddv.useroperations.ExportStringtoFile;
 
 import javax.swing.JToolBar;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.BoxLayout;
 import java.awt.Color;
 import java.awt.GridLayout;
 import java.awt.Point;
@@ -49,8 +52,6 @@ public class JWAC_MapFrame extends JFrame implements Listener {
     this.ds = desSpace;
     initializeFrame();
     setDesignSpace(desSpace);
-    //setMaximumSize(new Dimension(600, 600));
-    //pack();
   }
   
   public void initializeFrame() {
@@ -64,7 +65,10 @@ public class JWAC_MapFrame extends JFrame implements Listener {
     // JScrollPane pane = new JScrollPane(this.mapPanel);
     // pane.setSize(new Dimension(400, 400));
     this.panelDisplay.add(this.mapPanel, "Center");
-    this.panelDisplay.add((Component)this.mapPanel.getToolBar(), "North");
+    JPanel toolbar_holder = new JPanel();
+    toolbar_holder.setLayout(new BorderLayout());
+    toolbar_holder.add( this.mapPanel.getToolBar(), "North" );
+    this.panelDisplay.add(toolbar_holder, "West");
     this.panelDisplay.add(this.brushesPanel, "South");
     setLocation(0, 100);
     getContentPane().add(this.panelDisplay);
@@ -331,39 +335,76 @@ public class JWAC_MapFrame extends JFrame implements Listener {
 
           this.toolbar_map_value_selector = new JComboBox<String>();
           this.toolbar = new JToolBar();
+          //this.toolbar.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
+          this.toolbar.setLayout(new BoxLayout(this.toolbar, BoxLayout.Y_AXIS));
+          //this.toolbar.setLayout(new GridLayout(3, 1, 12, 12));
           this.constructMapToolbar(this.toolbar);
-
+          
           this.svg_universe = new com.kitfox.svg.SVGUniverse();
           this.constructPanelUI(this.svg_universe);
 
           this.setSize(750, 500);
       }
 
+      private static void lockInPreferredSize(javax.swing.JComponent component) {
+        component.setMaximumSize( component.getPreferredSize() );
+      }
+
       private void constructMapToolbar(JToolBar toolbar) {
-        // JButton test_btn = new JButton("Test Button");
-        // test_btn.addActionListener((event) -> {
-        //   System.out.println("test_btn clicked! event="+event);
-        // });
-        // toolbar.add(test_btn);
-
-        // JLabel scale_label = new JLabel("Map scale: ");
-        // toolbar.add(scale_label);
-        // JSlider scale_slider = new JSlider();
-        // scale_slider.setMinimum(0);
-        // scale_slider.setMaximum(100);
-        // scale_slider.setValue(50);
-        // scale_slider.setOrientation(JSlider.HORIZONTAL);
-        // scale_slider.setPreferredSize(new Dimension(200, 20));
-        // scale_slider.addChangeListener((evt) -> {
-        //   if (this.svg_view != null) {
-        //     this.svg_view.setScale( (float) scale_slider.getValue() / 100.0f );
-        //   }
-        // });
-
+        JPanel field_label_holder = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
         JLabel field_label = new JLabel("Country Name Field: ");
-        toolbar.add(field_label);
-        toolbar.add(this.toolbar_map_value_selector);
+        lockInPreferredSize(field_label);
+        field_label_holder.add(field_label);
+        toolbar.add(field_label_holder);
+
+        JPanel name_dropdown_holder = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
+        name_dropdown_holder.add(this.toolbar_map_value_selector);
+        this.toolbar_map_value_selector.setMaximumRowCount(18); // show lots of rows
+        lockInPreferredSize(this.toolbar_map_value_selector);
+        toolbar.add(name_dropdown_holder);
+
+        //toolbar.add( Box.createHorizontalStrut(5) );
+        //toolbar.add( Box.createVerticalStrut(5) );
+
+        JButton svg_pick_btn = new JButton("Select .svg map file");
+        svg_pick_btn.addActionListener((evt) -> {
+          this.pick_new_svg_file();
+        });
+        svg_pick_btn.setBorder( javax.swing.BorderFactory.createBevelBorder(0) );
+        lockInPreferredSize(svg_pick_btn);
+        toolbar.add(svg_pick_btn);
+
+        //short pixels_to_eat = Short.MAX_VALUE;
+        // short pixels_to_eat = 1600;
+        // toolbar.add(new Box.Filler( // eats space at bottom to prevent children from getting fat
+        //     new Dimension(0, 0),
+        //     new Dimension(0, pixels_to_eat),
+        //     new Dimension(0, pixels_to_eat))
+        // );
         
+      }
+
+      private void pick_new_svg_file() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setFileFilter(new FileFilter() {
+            public String getDescription() {
+                return "SVG Documents (*.svg)";
+            }
+            public boolean accept(File f) {
+                if (f.isDirectory()) {
+                    return true; // ???
+                } else {
+                    return f.getName().toLowerCase().endsWith(".svg");
+                }
+            }
+        });
+        int result = fileChooser.showOpenDialog(this.parentFrame);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = fileChooser.getSelectedFile();
+            System.out.println("Selected file: " + selectedFile.getAbsolutePath());
+            this.svg_uri = selectedFile.toURI();
+            this.svg_panel.setSvgURI(this.svg_uri);
+        }
       }
 
       private void constructPanelUI(com.kitfox.svg.SVGUniverse svg_universe) {
