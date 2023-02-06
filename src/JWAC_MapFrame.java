@@ -344,6 +344,9 @@ public class JWAC_MapFrame extends JFrame implements Listener {
           }
         }
 
+        this.mapPanel.toolbar_map_value_min.setText(""+min_country_raw_val);
+        this.mapPanel.toolbar_map_value_max.setText(""+max_country_raw_val);
+
         if (max_country_raw_val.isNaN() || min_country_raw_val.isNaN()) {
           System.out.println("No country row values could be parsed as numbers, not changing map color!");
           return;
@@ -353,26 +356,31 @@ public class JWAC_MapFrame extends JFrame implements Listener {
           return;
         }
 
-        // System.out.println("max_country_raw_val = "+max_country_raw_val);
-        // System.out.println("min_country_raw_val = "+min_country_raw_val);
+        System.out.println("max_country_raw_val = "+max_country_raw_val);
+        System.out.println("min_country_raw_val = "+min_country_raw_val);
+
+        float max_hue_val = 0.71f; // cannot wrap around, highest value is a blue color instead of red (confusing UI)
 
         // Normalize country_raw_values between 0 and 1.0 for color hue
         HashMap<String, Double> country_hue_values = new HashMap<>();
         for (String country_name : country_raw_values.keySet()) {
           country_hue_values.put(country_name,
-            (country_raw_values.get(country_name) - min_country_raw_val) / ((max_country_raw_val - min_country_raw_val))
+            (country_raw_values.get(country_name) - min_country_raw_val) / ((max_country_raw_val - min_country_raw_val) * (1.0f/max_hue_val) )
           );
         }
+
+        this.mapPanel.toolbar_map_value_min.setText(""+min_country_raw_val);
+        this.mapPanel.toolbar_map_value_max.setText(""+max_country_raw_val);
         
+        this.mapPanel.set_all_children_in_ds_to_bg("gray"); // set countries w/o a value to gray
         
         for (String country_name : country_hue_values.keySet()) {
           if (country_hue_values.containsKey(country_name)) {
             if (country_svg_paths.containsKey(country_name) && country_svg_paths.get(country_name) != null) {
               // Set color to HSV (hue val, 255, 255)
               //String fill_color_val = "hsl("+country_hue_values.get(country_name)+", 100%, 100%)";
-              //System.out.println("recolor_all_countries "+country_name+" get = "+country_hue_values.get(country_name));
+              System.out.println("recolor_all_countries "+country_name+" hue = "+country_hue_values.get(country_name)+" raw = "+country_raw_values.get(country_name));
               String fill_color_val = "#"+hsvToRgb((float) (double) country_hue_values.get(country_name), 1.0f, 1.0f);
-              //System.out.println("recolor_all_countries "+country_name+" fill = "+fill_color_val);
               try {
                 country_svg_paths.get(country_name).setAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, fill_color_val);
               }
@@ -388,7 +396,6 @@ public class JWAC_MapFrame extends JFrame implements Listener {
             }
           }
         }
-
 
       }
       else {
@@ -422,11 +429,8 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         case 3: return rgbToString(p, q, value);
         case 4: return rgbToString(t, p, value);
         case 5: return rgbToString(value, p, q);
-        
-        case 6: return rgbToString(value, p, q);
-        
-        default: throw new RuntimeException("Something went wrong when converting from HSV to RGB. Input was " + hue + ", " + saturation + ", " + value);
-        //default: return "ffffff"; // Seen w/ 1.0, 1.0, 1.0 inputs
+        //default: throw new RuntimeException("Something went wrong when converting from HSV to RGB. Input was " + hue + ", " + saturation + ", " + value);
+        default: return rgbToString(hue + (hue < 0.5f? 0.01f : -0.01f ), saturation, value); // Seen default: taken w/ 1.0, 1.0, 1.0 inputs, move closer to 0.5 hue
       }
   }
 
@@ -498,6 +502,9 @@ public class JWAC_MapFrame extends JFrame implements Listener {
       public JComboBox<String> toolbar_map_color_field_selector;
 
       public JComboBox<MapColorValueCollisionStrategy> toolbar_map_value_collision_strat;
+
+      public JLabel toolbar_map_value_min;
+      public JLabel toolbar_map_value_max;
 
       public JWAC_MapPanel() {
           this.setLayout(new BorderLayout());
@@ -597,6 +604,33 @@ public class JWAC_MapFrame extends JFrame implements Listener {
           }
         });
         toolbar.add(this.toolbar_map_value_collision_strat);
+
+        this.toolbar_map_value_min = new JLabel("0");
+        this.toolbar_map_value_max = new JLabel("1");
+        
+        JPanel toolbar_map_values = new JPanel();
+        toolbar_map_values.setLayout(new BorderLayout());
+        toolbar_map_values.add(this.toolbar_map_value_min, "West");
+        toolbar_map_values.add(this.toolbar_map_value_max, "East");
+        toolbar.add(toolbar_map_values);
+
+        try {
+          JLabel color_icon_label = new JLabel();
+          color_icon_label.setIcon(
+            new javax.swing.ImageIcon(
+              //new javax.swing.ImageIcon(getClass().getResource("/images/gradientbluered.png")) // image from atsv.jar
+              new javax.swing.ImageIcon(getClass().getResource("/images/gradientredblue.png"))
+                .getImage().getScaledInstance(200, 20, java.awt.Image.SCALE_SMOOTH)
+            )
+          );
+          color_icon_label.setIconTextGap(0);
+          color_icon_label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+          color_icon_label.setHorizontalTextPosition(javax.swing.SwingConstants.TRAILING);
+          toolbar.add(color_icon_label);
+        }
+        catch (Exception e) {
+          e.printStackTrace();
+        }
         
       }
 
@@ -662,10 +696,14 @@ public class JWAC_MapFrame extends JFrame implements Listener {
       }
 
       private void set_all_children_in_ds_to_red_bg() {
-        set_all_children_in_ds_to_red_bg(null);
+        set_all_children_in_ds_to_bg(null, "red");
       }
 
-      private void set_all_children_in_ds_to_red_bg(com.kitfox.svg.Group parent) {
+      private void set_all_children_in_ds_to_bg(String fill_val) {
+        set_all_children_in_ds_to_bg(null, fill_val);
+      }
+
+      private void set_all_children_in_ds_to_bg(com.kitfox.svg.Group parent, String fill_val) {
         if (this.svg_diagram != null) {
           if (parent == null) {
             parent = this.svg_diagram.getRoot();
@@ -673,17 +711,17 @@ public class JWAC_MapFrame extends JFrame implements Listener {
           for (int i=0; i<parent.getNumChildren(); i+=1) {
             SVGElement child = parent.getChild(i);
             if (child instanceof com.kitfox.svg.Group) {
-              set_all_children_in_ds_to_red_bg((com.kitfox.svg.Group) child);
+              set_all_children_in_ds_to_bg((com.kitfox.svg.Group) child, fill_val);
             }
             else {
 
               try {
-                child.setAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, "red");
+                child.setAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, fill_val);
               }
               catch (Exception e) {
                 e.printStackTrace();
                 try {
-                  child.addAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, "red");
+                  child.addAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, fill_val);
                 }
                 catch (Exception e2) {
                   e2.printStackTrace();
