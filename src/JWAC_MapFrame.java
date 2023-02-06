@@ -36,6 +36,12 @@ import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.function.Function;
+
+import com.kitfox.svg.SVGElement;
 
 public class JWAC_MapFrame extends JFrame implements Listener {
   private JWAC_MapPanel mapPanel;
@@ -184,7 +190,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
     deletePlot();
   }
   
-  com.kitfox.svg.SVGElement last_picked_svg_element = null;
+  SVGElement last_picked_svg_element = null;
 
   public void pickOperation(String type) {
     //this.histogramPanel.brushUpdate();
@@ -219,7 +225,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         int column_i_to_use = this.mapPanel.toolbar_map_value_selector.getSelectedIndex();
         String column_name_to_use = ""+this.mapPanel.toolbar_map_value_selector.getSelectedItem();
 
-        String selected_country_name = this.ds.getColumn(column_i_to_use).getStringValue(selected_data_idx);
+        String selected_country_name = this.ds.getColumn(column_i_to_use).getStringValue(selected_data_idx).trim();
 
         System.out.println("Highlighing the the country "+selected_country_name+"");
         System.out.println("diagram should be "+this.mapPanel.svg_universe.getDiagram(this.mapPanel.svg_panel.getSvgURI()));
@@ -227,7 +233,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
 
         this.mapPanel.svg_diagram = com.kitfox.svg.SVGCache.getSVGUniverse().getDiagram(this.mapPanel.svg_panel.getSvgURI()); // Wierdness that fixes painting
 
-        com.kitfox.svg.SVGElement element = this.mapPanel.svg_diagram.getElement(selected_country_name);
+        SVGElement element = this.mapPanel.svg_diagram.getElement(selected_country_name);
         if (element == null) {
           element = this.mapPanel.svg_diagram.getElement(selected_country_name.toLowerCase());
         }
@@ -263,39 +269,174 @@ public class JWAC_MapFrame extends JFrame implements Listener {
 
   public void recolor_all_countries() {
     try {
+      this.mapPanel.svg_diagram = com.kitfox.svg.SVGCache.getSVGUniverse().getDiagram(this.mapPanel.svg_panel.getSvgURI()); // Wierdness that fixes painting
+
       // Get column index, or mark all red if == -1
       int color_column_i = this.mapPanel.toolbar_map_color_field_selector.getSelectedIndex() - 1 /* idx 0 == "Constant (red)", now it's == -1 */;
       if (color_column_i >= 0) {
         // For all data strings...
-        int num_rows = 0;
-        List<SVGElement> row_country_elements = new List<SVGElement>();
-        List<String> row_col_vals = new List<String>();
-        int country_col_i_to_use = this.mapPanel.toolbar_map_value_selector.getSelectedIndex();
+        
+        MapColorValueCollisionStrategy row_collision_strat = (MapColorValueCollisionStrategy) this.mapPanel.toolbar_map_value_collision_strat.getSelectedItem();
+        if (row_collision_strat == null) {
+          System.out.println("WARNING: row_collision_strat == null, using average of all values for country!");
+          row_collision_strat = MapColorValueCollisionStrategy.getAll().get(0);
+        }
 
+        //ArrayList<SVGElement> row_country_elements = new ArrayList<SVGElement>();
+        //ArrayList<String> row_col_vals = new ArrayList<String>();
+        
+        int country_col_i_to_use = this.mapPanel.toolbar_map_value_selector.getSelectedIndex();
+        int num_rows = this.ds.getColumn(country_col_i_to_use).size();
+
+        HashMap<String, List<Double>> country_row_values = new HashMap<>();
+        HashMap<String, SVGElement> country_svg_paths = new HashMap<>();
+
+        int unparseable_values = 0;
         for (int row_i=0; row_i < num_rows; row_i += 1) {
-          String row_col_val = this.ds.getColumn(color_column_i).getStringValue(row_i);
-          row_col_vals.add(row_col_val);
-          String row_country_name = this.ds.getColumn(country_col_i_to_use).getStringValue(row_i);
-          SVGElement row_country_elm = this.mapPanel.svg_diagram.getElement(row_country_name);
-          row_country_elements.add(row_country_elm);
+          String row_country_name = this.ds.getColumn(country_col_i_to_use).getStringValue(row_i).trim();
+          String row_col_val = this.ds.getColumn(color_column_i).getStringValue(row_i).trim();
+          row_col_val = row_col_val.replace(",", "");
+          
+          if (!country_row_values.containsKey(row_country_name)) {
+            country_row_values.put(row_country_name, new ArrayList<Double>());
+          }
+          try {
+            country_row_values.get(row_country_name).add(
+              Double.parseDouble(row_col_val)
+            );
+          }
+          catch (Exception e) {
+            //e.printStackTrace();
+            unparseable_values += 1;
+            //System.out.println("Coult not parse "+row_col_val+" to double!");
+          }
+          
+          try {
+            SVGElement row_country_elm = this.mapPanel.svg_diagram.getElement(row_country_name);
+            if (row_country_elm == null) {
+              row_country_elm = this.mapPanel.svg_diagram.getElement(row_country_name.toLowerCase());
+            }
+            if (row_country_elm != null) {
+              country_svg_paths.put(row_country_name, row_country_elm);
+            }
+          }
+          catch (Exception e) {
+            e.printStackTrace();
+          }
+        }
+
+        if (unparseable_values > 0) {
+          System.out.println("WARNING: for color column = "+color_column_i+" there were "+unparseable_values+" un-parseable row values!");
+        }
+
+        HashMap<String, Double> country_raw_values = new HashMap<>();
+        for (String country_name : country_row_values.keySet()) {
+          country_raw_values.put(country_name, row_collision_strat.apply(country_row_values.get(country_name)) );
+        }
+        Double max_country_raw_val = Double.NaN;
+        Double min_country_raw_val = Double.NaN;
+        for (String country_name : country_raw_values.keySet()) {
+          if (max_country_raw_val.isNaN() || country_raw_values.get(country_name) > max_country_raw_val) {
+            max_country_raw_val = country_raw_values.get(country_name);
+          }
+          if (min_country_raw_val.isNaN() || country_raw_values.get(country_name) < min_country_raw_val) {
+            min_country_raw_val = country_raw_values.get(country_name);
+          }
+        }
+
+        if (max_country_raw_val.isNaN() || min_country_raw_val.isNaN()) {
+          System.out.println("No country row values could be parsed as numbers, not changing map color!");
+          return;
+        }
+        if (max_country_raw_val == min_country_raw_val) {
+          System.out.println("max and min values are identical ("+max_country_raw_val+", "+min_country_raw_val+"), not changing map color!");
+          return;
+        }
+
+        // System.out.println("max_country_raw_val = "+max_country_raw_val);
+        // System.out.println("min_country_raw_val = "+min_country_raw_val);
+
+        // Normalize country_raw_values between 0 and 1.0 for color hue
+        HashMap<String, Double> country_hue_values = new HashMap<>();
+        for (String country_name : country_raw_values.keySet()) {
+          country_hue_values.put(country_name,
+            (country_raw_values.get(country_name) - min_country_raw_val) / ((max_country_raw_val - min_country_raw_val))
+          );
         }
         
-        // row_col_vals holds value for each row by index, and row_country_elements
-        // contains either the SVG element to change the color of OR null.
         
+        for (String country_name : country_hue_values.keySet()) {
+          if (country_hue_values.containsKey(country_name)) {
+            if (country_svg_paths.containsKey(country_name) && country_svg_paths.get(country_name) != null) {
+              // Set color to HSV (hue val, 255, 255)
+              //String fill_color_val = "hsl("+country_hue_values.get(country_name)+", 100%, 100%)";
+              //System.out.println("recolor_all_countries "+country_name+" get = "+country_hue_values.get(country_name));
+              String fill_color_val = "#"+hsvToRgb((float) (double) country_hue_values.get(country_name), 1.0f, 1.0f);
+              //System.out.println("recolor_all_countries "+country_name+" fill = "+fill_color_val);
+              try {
+                country_svg_paths.get(country_name).setAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, fill_color_val);
+              }
+              catch (Exception e) {
+                e.printStackTrace();
+                try {
+                  country_svg_paths.get(country_name).addAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, fill_color_val);
+                }
+                catch (Exception e2) {
+                  e2.printStackTrace();
+                }
+              }
+            }
+          }
+        }
 
 
       }
       else {
         this.mapPanel.set_all_children_in_ds_to_red_bg();
       }
+
+      this.mapPanel.svg_panel.repaint();
+      this.mapPanel.repaint();
+      
       // Finally color any selected element
-      pickOperation("PointSelect");
+      // last_picked_svg_element = null; // Do not reset a prior, we just colored them!
+      // pickOperation("PointSelect");
     }
     catch (Exception e) {
       e.printStackTrace();
     }
   }
+
+  public static String hsvToRgb(float hue, float saturation, float value) {
+
+      int h = (int)(hue * 6);
+      float f = hue * 6 - h;
+      float p = value * (1 - saturation);
+      float q = value * (1 - f * saturation);
+      float t = value * (1 - (1 - f) * saturation);
+
+      switch (h) {
+        case 0: return rgbToString(value, t, p);
+        case 1: return rgbToString(q, value, p);
+        case 2: return rgbToString(p, value, t);
+        case 3: return rgbToString(p, q, value);
+        case 4: return rgbToString(t, p, value);
+        case 5: return rgbToString(value, p, q);
+        
+        case 6: return rgbToString(value, p, q);
+        
+        default: throw new RuntimeException("Something went wrong when converting from HSV to RGB. Input was " + hue + ", " + saturation + ", " + value);
+        //default: return "ffffff"; // Seen w/ 1.0, 1.0, 1.0 inputs
+      }
+  }
+
+  public static String rgbToString(float r, float g, float b) {
+      String rs = String.format("%02X", (int)(r * 255));
+      String gs = String.format("%02X", (int)(g * 255));
+      String bs = String.format("%02X", (int)(b * 255));
+      return rs + gs + bs;
+  }
+
   
   public void updateBrushPreferenceControls() {}
   
@@ -356,11 +497,17 @@ public class JWAC_MapFrame extends JFrame implements Listener {
 
       public JComboBox<String> toolbar_map_color_field_selector;
 
+      public JComboBox<MapColorValueCollisionStrategy> toolbar_map_value_collision_strat;
+
       public JWAC_MapPanel() {
           this.setLayout(new BorderLayout());
 
           this.toolbar_map_value_selector = new JComboBox<String>();
           this.toolbar_map_color_field_selector = new JComboBox<String>();
+          this.toolbar_map_value_collision_strat = new JComboBox<MapColorValueCollisionStrategy>(
+            MapColorValueCollisionStrategy.getAll().toArray( new MapColorValueCollisionStrategy[]{} )
+          );
+          
           this.toolbar = new JToolBar();
           //this.toolbar.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
           this.toolbar.setLayout(new BoxLayout(this.toolbar, BoxLayout.Y_AXIS));
@@ -429,7 +576,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         display_ids_btn.setBorder( javax.swing.BorderFactory.createBevelBorder(0) );
         toolbar.add(flowLeftWrapper(display_ids_btn));
 
-        JLabel color_field_label = new JLabel("Color (not yet done)");
+        JLabel color_field_label = new JLabel("Color Field");
         toolbar.add(flowLeftWrapper(color_field_label));
 
         this.toolbar_map_color_field_selector.setMaximumRowCount(18); // show lots of rows
@@ -439,6 +586,17 @@ public class JWAC_MapFrame extends JFrame implements Listener {
           }
         });
         toolbar.add(this.toolbar_map_color_field_selector);
+
+        JLabel color_field_collision_label = new JLabel("Color Field value collision stragety");
+        toolbar.add(flowLeftWrapper(color_field_collision_label));
+
+        this.toolbar_map_value_collision_strat.setMaximumRowCount(18); // show lots of rows
+        this.toolbar_map_value_collision_strat.addActionListener((evt) -> {
+          if (this.parentFrame != null) {
+            this.parentFrame.recolor_all_countries();
+          }
+        });
+        toolbar.add(this.toolbar_map_value_collision_strat);
         
       }
 
@@ -491,7 +649,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
             parent = this.svg_diagram.getRoot();
           }
           for (int i=0; i<parent.getNumChildren(); i+=1) {
-            com.kitfox.svg.SVGElement child = parent.getChild(i);
+            SVGElement child = parent.getChild(i);
             if (child instanceof com.kitfox.svg.Group) {
               child_ids += get_child_ids_string((com.kitfox.svg.Group) child);
             }
@@ -513,7 +671,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
             parent = this.svg_diagram.getRoot();
           }
           for (int i=0; i<parent.getNumChildren(); i+=1) {
-            com.kitfox.svg.SVGElement child = parent.getChild(i);
+            SVGElement child = parent.getChild(i);
             if (child instanceof com.kitfox.svg.Group) {
               set_all_children_in_ds_to_red_bg((com.kitfox.svg.Group) child);
             }
@@ -609,17 +767,67 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         String[] constant_and_all_property_names = new String[1+all_property_names.length];
         constant_and_all_property_names[0] = "Constant (red)";
         for (int col_i=0; col_i < this.ds.getModel().getDimension(); col_i += 1) {
-          constant_and_all_property_names[col_i + 1] = constant_and_all_property_names[col_i];
+          constant_and_all_property_names[col_i + 1] = all_property_names[col_i];
         }
-        this.toolbar_map_color_field_selector.setModel(new JComboBox<String>(all_property_names).getModel());
-
-
-
+        this.toolbar_map_color_field_selector.setModel(new JComboBox<String>(constant_and_all_property_names).getModel());
 
 
       }
 
 
+
+  }
+
+
+  // Responsible for encoding strategies of converting [N] floats into a single value N,
+  // for example average(1,2,3) -> 2, first(1,2,3) -> 1, sum(1,2,3) -> 6 etc.
+  public static class MapColorValueCollisionStrategy {
+
+    private String name;
+    private Function<List<Double>, Double> strategy;
+    public MapColorValueCollisionStrategy(String name, Function<List<Double>, Double> strategy) {
+      this.name = name;
+      this.strategy = strategy;
+    }
+    public Double apply(List<Double> values) {
+      return this.strategy.apply(values);
+    }
+
+    @Override
+    public String toString() {
+      return this.name;
+    }
+
+    public static ArrayList<MapColorValueCollisionStrategy> getAll() {
+      ArrayList<MapColorValueCollisionStrategy> all = new ArrayList<MapColorValueCollisionStrategy>(16);
+      
+      all.add(new MapColorValueCollisionStrategy("average of all values for country", (numbers) -> {
+        double sum = 0.0;
+        for (double d : numbers) {
+          sum += d;
+        }
+        return sum / (double) numbers.size();
+      }));
+
+      all.add(new MapColorValueCollisionStrategy("sum all values for country", (numbers) -> {
+        double sum = 0.0;
+        for (double d : numbers) {
+          sum += d;
+        }
+        return sum;
+      }));
+
+      all.add(new MapColorValueCollisionStrategy("first of all values for country", (numbers) -> {
+        double val = 0.0;
+        for (double d : numbers) {
+          val = d;
+          break;
+        }
+        return val;
+      }));
+
+      return all;
+    }
 
   }
 }
