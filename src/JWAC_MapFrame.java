@@ -379,7 +379,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
             if (country_svg_paths.containsKey(country_name) && country_svg_paths.get(country_name) != null) {
               // Set color to HSV (hue val, 255, 255)
               //String fill_color_val = "hsl("+country_hue_values.get(country_name)+", 100%, 100%)";
-              System.out.println("recolor_all_countries "+country_name+" hue = "+country_hue_values.get(country_name)+" raw = "+country_raw_values.get(country_name));
+              //System.out.println("recolor_all_countries "+country_name+" hue = "+country_hue_values.get(country_name)+" raw = "+country_raw_values.get(country_name));
               String fill_color_val = "#"+hsvToRgb((float) (double) country_hue_values.get(country_name), 1.0f, 1.0f);
               try {
                 country_svg_paths.get(country_name).setAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, fill_color_val);
