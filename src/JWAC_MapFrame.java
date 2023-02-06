@@ -615,18 +615,28 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         toolbar.add(toolbar_map_values);
 
         try {
-          JLabel color_icon_label = new JLabel();
-          color_icon_label.setIcon(
-            new javax.swing.ImageIcon(
-              //new javax.swing.ImageIcon(getClass().getResource("/images/gradientbluered.png")) // image from atsv.jar
-              new javax.swing.ImageIcon(getClass().getResource("/images/gradientredblue.png"))
-                .getImage().getScaledInstance(200, 20, java.awt.Image.SCALE_SMOOTH)
-            )
-          );
-          color_icon_label.setIconTextGap(0);
-          color_icon_label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-          color_icon_label.setHorizontalTextPosition(javax.swing.SwingConstants.TRAILING);
-          toolbar.add(color_icon_label);
+          // JLabel color_icon_label = new JLabel();
+          // color_icon_label.setIcon(
+          //   new javax.swing.ImageIcon(
+          //     //new javax.swing.ImageIcon(getClass().getResource("/images/gradientbluered.png")) // image from atsv.jar
+          //     new javax.swing.ImageIcon(getClass().getResource("/images/gradientredblue.png"))
+          //       .getImage().getScaledInstance(200, 20, java.awt.Image.SCALE_SMOOTH)
+          //   )
+          // );
+          // color_icon_label.setIconTextGap(0);
+          // color_icon_label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+          // color_icon_label.setHorizontalTextPosition(javax.swing.SwingConstants.TRAILING);
+          
+          final java.awt.Image image = new javax.swing.ImageIcon(getClass().getResource("/images/gradientredblue.png"))
+                .getImage().getScaledInstance(200, 20, java.awt.Image.SCALE_SMOOTH);
+
+          JPanel img_panel = new JPanel() {
+            @Override
+            public void paint(java.awt.Graphics g) {
+              g.drawImage(image, 0, 0, null);
+            }
+          };
+          toolbar.add(img_panel);
         }
         catch (Exception e) {
           e.printStackTrace();
