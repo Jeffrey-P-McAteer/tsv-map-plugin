@@ -789,6 +789,8 @@ public class JWAC_MapFrame extends JFrame implements Listener {
           }
       }
 
+      private static HashMap<String, nddv.gui.DetailWindow> details_cache = new HashMap<>();
+
       public void onMouseClicked(java.awt.event.MouseEvent evt) {
         // System.out.println("JWAC_MapPanel onMouseClicked evt="+evt);
         try {
@@ -835,8 +837,13 @@ public class JWAC_MapFrame extends JFrame implements Listener {
                 // row matches, open row_i for details!
                 
                 try {
-                  nddv.gui.DetailWindow sdw = new nddv.gui.DetailWindow(this.ds, row_i);
-                  sdw.setVisible(true);
+                  String details_win_cache_key = row_country_name+"_"+row_i;
+                  if (!details_cache.containsKey(details_win_cache_key)) {
+                    nddv.gui.DetailWindow sdw = new nddv.gui.DetailWindow(this.ds, row_i);
+                    details_cache.put(details_win_cache_key, sdw);
+                  }
+                  details_cache.get(details_win_cache_key).setVisible(true);
+                  details_cache.get(details_win_cache_key).requestFocus();
                   opened_details = true;
                 }
                 catch (Exception e) {
