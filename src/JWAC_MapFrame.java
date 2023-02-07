@@ -745,6 +745,11 @@ public class JWAC_MapFrame extends JFrame implements Listener {
 
       private void constructPanelUI(com.kitfox.svg.SVGUniverse svg_universe) {
           try {
+            this.addMouseListener(new MouseAdapter() {
+              public void mouseClicked(MouseEvent evt) {
+                JWAC_MapPanel.this.onMouseClicked(evt);
+              }
+            });
             // java.net.URI svg = svg_universe.loadSVG(
             //     //new java.net.URL("https://upload.wikimedia.org/wikipedia/commons/4/4d/BlankMap-World.svg")
             //     new java.net.URL("https://simplemaps.com/static/demos/resources/svg-library/svgs/world.svg")
@@ -784,9 +789,51 @@ public class JWAC_MapFrame extends JFrame implements Listener {
           }
       }
 
+      public void onMouseClicked(java.awt.event.MouseEvent evt) {
+        // System.out.println("JWAC_MapPanel onMouseClicked evt="+evt);
+        try {
+          this.svg_diagram = com.kitfox.svg.SVGCache.getSVGUniverse().getDiagram(this.svg_panel.getSvgURI());
+
+          // evt.getPoint() is in screen coords, must convert to svg coords
+          float width_scale = this.svg_diagram.getWidth() / ((float) this.svg_panel.getSize().width);
+          float height_scale = this.svg_diagram.getHeight() / ((float) this.svg_panel.getSize().height);
+          java.awt.Point svg_point = new java.awt.Point(
+            (int) (width_scale * (float) evt.getPoint().x),
+            (int) (height_scale * (float) evt.getPoint().y)
+          );
+
+          List<List<SVGElement>> clicked_elements = this.svg_diagram.pick(
+            svg_point, null
+          );
+
+          ArrayList<String> ids_clicked = new ArrayList<>();
+          for (List<SVGElement> elms : clicked_elements) {
+            for (SVGElement elm : elms) {
+              ids_clicked.add( elm.getId() );
+            }
+          }
+
+          System.out.println("");
+          for (String svg_elm_id : ids_clicked) {
+            System.out.println("User clicked "+svg_elm_id);
+            // Lookup a row with this ID and open it
+            int row_i = -1;
+
+            if (row_i >= 0) {
+              // Open it
+
+            }
+          }
+
+        }
+        catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+
       public void actionPerformed(ActionEvent e) {
-          System.out.println("JWAC_MapPanel actionPerformed e="+e);
-          
+        System.out.println("JWAC_MapPanel actionPerformed e="+e);
+        
       }
 
       public void setParentFrame(JWAC_MapFrame parentFrame) {
