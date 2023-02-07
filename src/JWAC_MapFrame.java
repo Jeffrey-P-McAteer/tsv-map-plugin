@@ -792,6 +792,10 @@ public class JWAC_MapFrame extends JFrame implements Listener {
       public void onMouseClicked(java.awt.event.MouseEvent evt) {
         // System.out.println("JWAC_MapPanel onMouseClicked evt="+evt);
         try {
+          if (evt.getClickCount() <= 1) { // ignore single-click events
+            return;
+          }
+
           this.svg_diagram = com.kitfox.svg.SVGCache.getSVGUniverse().getDiagram(this.svg_panel.getSvgURI());
 
           // evt.getPoint() is in screen coords, must convert to svg coords
@@ -809,21 +813,44 @@ public class JWAC_MapFrame extends JFrame implements Listener {
           ArrayList<String> ids_clicked = new ArrayList<>();
           for (List<SVGElement> elms : clicked_elements) {
             for (SVGElement elm : elms) {
-              ids_clicked.add( elm.getId() );
+              ids_clicked.add( elm.getId().trim() );
             }
           }
+
+          int country_col_i_to_use = this.toolbar_map_value_selector.getSelectedIndex();
+          int num_rows = this.ds.getColumn(country_col_i_to_use).size();
+
+          boolean opened_details = false;
 
           System.out.println("");
           for (String svg_elm_id : ids_clicked) {
-            System.out.println("User clicked "+svg_elm_id);
-            // Lookup a row with this ID and open it
-            int row_i = -1;
+            System.out.println("User double-clicked graph svg id path = "+svg_elm_id);
+            // Lookup all rows with this ID as sountry and open them
 
-            if (row_i >= 0) {
-              // Open it
-
+            int unparseable_values = 0;
+            for (int row_i=0; row_i < num_rows; row_i += 1) {
+              String row_country_name = this.ds.getColumn(country_col_i_to_use).getStringValue(row_i).trim();
+              if (row_country_name.equalsIgnoreCase(svg_elm_id)) {
+                
+                // row matches, open row_i for details!
+                
+                try {
+                  nddv.gui.DetailWindow sdw = new nddv.gui.DetailWindow(this.ds, row_i);
+                  sdw.setVisible(true);
+                  opened_details = true;
+                }
+                catch (Exception e) {
+                  e.printStackTrace();
+                }
+                
+              }
             }
           }
+
+          if (ids_clicked.size() > 1 && !opened_details) {
+            System.out.println("No matching countries, is column "+country_col_i_to_use+" the one with country names?");
+          }
+
 
         }
         catch (Exception e) {
