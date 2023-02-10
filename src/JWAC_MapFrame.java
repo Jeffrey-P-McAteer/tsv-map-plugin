@@ -432,6 +432,25 @@ public class JWAC_MapFrame extends JFrame implements Listener {
     }
   }
 
+  public void retext_all_countries() {
+    try {
+      this.mapPanel.svg_diagram = com.kitfox.svg.SVGCache.getSVGUniverse().getDiagram(this.mapPanel.svg_panel.getSvgURI()); // Wierdness that fixes painting
+
+      // Get column index, or mark all red if == -1
+      int text_column_i = this.mapPanel.toolbar_map_text_field_selector.getSelectedIndex() - 1 /* idx 0 == "None", now it's == -1 */;
+      if (text_column_i >= 0) {
+        System.out.println("TODO set all text to value in column "+text_column_i);
+
+      }
+      else {
+        System.out.println("TODO remove all text!");
+      }
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
   public static String hsvToRgb(float hue, float saturation, float value) {
 
       int h = (int)(hue * 6);
@@ -521,6 +540,8 @@ public class JWAC_MapFrame extends JFrame implements Listener {
 
       public JComboBox<MapColorValueCollisionStrategy> toolbar_map_value_collision_strat;
 
+      public JComboBox<String> toolbar_map_text_field_selector;
+
       public JLabel toolbar_map_value_min;
       public JLabel toolbar_map_value_max;
 
@@ -532,6 +553,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
           this.toolbar_map_value_collision_strat = new JComboBox<MapColorValueCollisionStrategy>(
             MapColorValueCollisionStrategy.getAll().toArray( new MapColorValueCollisionStrategy[]{} )
           );
+          this.toolbar_map_text_field_selector = new JComboBox<String>();
           
           this.toolbar = new JToolBar();
           //this.toolbar.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
@@ -640,18 +662,6 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         toolbar.add(toolbar_map_values);
 
         try {
-          // JLabel color_icon_label = new JLabel();
-          // color_icon_label.setIcon(
-          //   new javax.swing.ImageIcon(
-          //     //new javax.swing.ImageIcon(getClass().getResource("/images/gradientbluered.png")) // image from atsv.jar
-          //     new javax.swing.ImageIcon(getClass().getResource("/images/gradientredblue.png"))
-          //       .getImage().getScaledInstance(200, 20, java.awt.Image.SCALE_SMOOTH)
-          //   )
-          // );
-          // color_icon_label.setIconTextGap(0);
-          // color_icon_label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-          // color_icon_label.setHorizontalTextPosition(javax.swing.SwingConstants.TRAILING);
-          
           final java.awt.Image image = new javax.swing.ImageIcon(getClass().getResource("/images/gradientredblue.png"))
                 .getImage().getScaledInstance(200, 20, java.awt.Image.SCALE_SMOOTH);
 
@@ -666,6 +676,18 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         catch (Exception e) {
           e.printStackTrace();
         }
+
+        JLabel text_field_label = new JLabel("Text Field");
+        toolbar.add(flowLeftWrapper(text_field_label));
+
+        this.toolbar_map_text_field_selector.setMaximumRowCount(18); // show lots of rows
+        this.toolbar_map_text_field_selector.addActionListener((evt) -> {
+          if (this.parentFrame != null) {
+            this.parentFrame.retext_all_countries();
+          }
+        });
+        toolbar.add(this.toolbar_map_text_field_selector);
+
         
       }
 
@@ -935,6 +957,13 @@ public class JWAC_MapFrame extends JFrame implements Listener {
           constant_and_all_property_names[col_i + 1] = all_property_names[col_i];
         }
         this.toolbar_map_color_field_selector.setModel(new JComboBox<String>(constant_and_all_property_names).getModel());
+
+        String[] none_and_all_property_names = new String[1+all_property_names.length];
+        none_and_all_property_names[0] = "None";
+        for (int col_i=0; col_i < this.ds.getModel().getDimension(); col_i += 1) {
+          none_and_all_property_names[col_i + 1] = all_property_names[col_i];
+        }
+        this.toolbar_map_text_field_selector.setModel(new JComboBox<String>(none_and_all_property_names).getModel());
 
 
       }
