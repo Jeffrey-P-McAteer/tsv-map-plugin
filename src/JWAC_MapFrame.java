@@ -41,6 +41,8 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.function.Function;
 
+import  java.util.prefs.*;
+
 import com.kitfox.svg.SVGElement;
 
 public class JWAC_MapFrame extends JFrame implements Listener {
@@ -53,9 +55,17 @@ public class JWAC_MapFrame extends JFrame implements Listener {
   private JPanel panelDisplay;
 
   private DesignSpace ds;
+
+  public Preferences prefs;
   
   public JWAC_MapFrame(DesignSpace desSpace) {
     this.ds = desSpace;
+    try {
+      this.prefs = Preferences.userNodeForPackage(JWAC_MapFrame.class);
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+    }
     initializeFrame();
     setDesignSpace(desSpace);
   }
@@ -202,7 +212,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         last_picked_svg_element.setAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, "red");
       }
       catch (Exception e) {
-        e.printStackTrace();
+        //e.printStackTrace();
         try {
           last_picked_svg_element.addAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, "red");
         }
@@ -244,7 +254,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
             element.setAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, "black");
           }
           catch (Exception e) {
-            e.printStackTrace();
+            //e.printStackTrace();
             try {
               element.addAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, "black");
             }
@@ -266,6 +276,9 @@ public class JWAC_MapFrame extends JFrame implements Listener {
     }
 
   }
+
+  private HashMap<String, String> last_recolor_colors = new HashMap<String, String>();
+  private HashMap<String, SVGElement> last_recolor_svg_paths = new HashMap<String, SVGElement>();
 
   public void recolor_all_countries() {
     try {
@@ -381,11 +394,16 @@ public class JWAC_MapFrame extends JFrame implements Listener {
               //String fill_color_val = "hsl("+country_hue_values.get(country_name)+", 100%, 100%)";
               //System.out.println("recolor_all_countries "+country_name+" hue = "+country_hue_values.get(country_name)+" raw = "+country_raw_values.get(country_name));
               String fill_color_val = "#"+hsvToRgb((float) (double) country_hue_values.get(country_name), 1.0f, 1.0f);
+              
+              // Persist this info so selectors can restore old colors
+              last_recolor_colors.put(country_name, fill_color_val);
+              last_recolor_svg_paths.put(country_name, country_svg_paths.get(country_name) );
+
               try {
                 country_svg_paths.get(country_name).setAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, fill_color_val);
               }
               catch (Exception e) {
-                e.printStackTrace();
+                //e.printStackTrace();
                 try {
                   country_svg_paths.get(country_name).addAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, fill_color_val);
                 }
@@ -546,6 +564,13 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         this.toolbar_map_value_selector.addActionListener((evt) -> {
           if (this.parentFrame != null) {
             this.parentFrame.pickOperation("PointSelect");
+            // Also send current value to preferences API
+            try {
+              this.parentFrame.prefs.put("last_selected_col_name", ""+this.toolbar_map_value_selector.getSelectedItem() );
+            }
+            catch (Exception e) {
+              e.printStackTrace();
+            }
           }
         });
         toolbar.add(this.toolbar_map_value_selector);
@@ -729,7 +754,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
                 child.setAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, fill_val);
               }
               catch (Exception e) {
-                e.printStackTrace();
+                //e.printStackTrace();
                 try {
                   child.addAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, fill_val);
                 }
@@ -891,6 +916,17 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         }
         // Hack and a half to udpate in-place
         this.toolbar_map_value_selector.setModel(new JComboBox<String>(all_property_names).getModel());
+
+        try {
+          // Attempt to use java preferences API to read back the last-picked value for this
+          String last_selected_col_name = this.parentFrame.prefs.get("last_selected_col_name", "");
+          if (last_selected_col_name != null && last_selected_col_name.length() > 0) {
+            this.toolbar_map_value_selector.setSelectedItem(last_selected_col_name);
+          }
+        }
+        catch (Exception e) {
+          e.printStackTrace();
+        }
 
         // Hack and a half to udpate in-place
         String[] constant_and_all_property_names = new String[1+all_property_names.length];
