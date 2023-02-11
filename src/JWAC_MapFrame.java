@@ -480,36 +480,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
               if (!last_recolor_colors.containsKey(country_name)) {
                 return;
               }
-              String text_elm_id = country_name+"_text";
-              com.kitfox.svg.Text text_elm = (com.kitfox.svg.Text) this.mapPanel.svg_diagram.getElement(text_elm_id);
-              boolean is_new = false;
-              if (text_elm == null) {
-                text_elm = new com.kitfox.svg.Text();
-                text_elm.addAttribute("id", com.kitfox.svg.animation.AnimationElement.AT_XML, text_elm_id);
 
-                java.awt.geom.Rectangle2D rect = ((com.kitfox.svg.Path) child).getBoundingBox();
-                double x = rect.getCenterX() - 10.0;
-                double y = rect.getCenterY();
-
-                if (x < 0.0) {
-                  x = 0.0;
-                }
-                if (y < 0.0) {
-                  y = 0.0;
-                }
-
-                x /= 2.0;
-                y /= 2.0;
-
-                text_elm.addAttribute("x", com.kitfox.svg.animation.AnimationElement.AT_XML, ""+((int) x) );
-                text_elm.addAttribute("y", com.kitfox.svg.animation.AnimationElement.AT_XML, ""+((int) y) );
-
-                System.out.println("x="+x+" y="+y);
-                is_new = true;
-              }
-              
-              text_elm.getContent().clear();
-              
               String data_value = "";
               if (last_recolor_country_to_row_ids.containsKey(country_name)) {
                 for (int row_i : last_recolor_country_to_row_ids.get(country_name)) {
@@ -523,13 +494,61 @@ public class JWAC_MapFrame extends JFrame implements Listener {
                 }
               }
 
+              String text_elm_id = country_name+"_text";
+              com.kitfox.svg.Text text_elm = (com.kitfox.svg.Text) this.mapPanel.svg_diagram.getElement(text_elm_id);
+              boolean is_new = false;
+              if (text_elm == null) {
+                text_elm = new com.kitfox.svg.Text();
+                text_elm.addAttribute("id", com.kitfox.svg.animation.AnimationElement.AT_XML, text_elm_id);
+
+                java.awt.geom.Rectangle2D rect = ((com.kitfox.svg.Path) child).getBoundingBox();
+                double x = rect.getCenterX() - ( (4.0) * data_value.length() );
+                double y = rect.getCenterY();
+
+                if (x < rect.getMinX()) {
+                  x = rect.getMinX();
+                }
+                if (y < rect.getMinY()) {
+                  y = rect.getMinY();
+                }
+
+                text_elm.addAttribute("x", com.kitfox.svg.animation.AnimationElement.AT_XML, ""+((int) x) );
+                text_elm.addAttribute("y", com.kitfox.svg.animation.AnimationElement.AT_XML, ""+((int) y) );
+
+                text_elm.addAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, "black");
+
+                //System.out.println("x="+x+" y="+y);
+
+                is_new = true;
+              }
+              else {
+                java.awt.geom.Rectangle2D rect = ((com.kitfox.svg.Path) child).getBoundingBox();
+                double x = rect.getCenterX() - ( (4.0) * data_value.length() );
+                double y = rect.getCenterY();
+
+                if (x < rect.getMinX()) {
+                  x = rect.getMinX();
+                }
+                if (y < rect.getMinY()) {
+                  y = rect.getMinY();
+                }
+
+                text_elm.setAttribute("x", com.kitfox.svg.animation.AnimationElement.AT_XML, ""+((int) x) );
+                text_elm.setAttribute("y", com.kitfox.svg.animation.AnimationElement.AT_XML, ""+((int) y) );
+              }
+              
+              text_elm.getContent().clear();
+
               text_elm.appendText(data_value);
 
-              if (is_new) {
-                try {
+              try {
                   child.loaderAddChild(null, text_elm);
-                }
-                catch (Exception e) { e.printStackTrace(); }
+                  child.swapChildren(0, 0); // forces a call to .build(), which constructs bounds in text_elm
+                  child.removeChild(text_elm);
+              }
+              catch (Exception e) { e.printStackTrace(); }
+
+              if (is_new) {
                 try {
                   this.mapPanel.svg_diagram.getRoot().loaderAddChild(null, text_elm);
                 }
@@ -549,13 +568,8 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         System.out.println("TODO remove all text!");
       }
 
-      // try {
-      //   this.mapPanel.svg_diagram.getRoot().build();
-      // }
-      // catch (Exception e) { e.printStackTrace(); }
-
-      // Again, guessing
-      //this.mapPanel.svg_diagram = com.kitfox.svg.SVGCache.getSVGUniverse().getDiagram(this.mapPanel.svg_panel.getSvgURI());
+      this.mapPanel.svg_panel.repaint();
+      this.mapPanel.repaint();
 
     }
     catch (Exception e) {
