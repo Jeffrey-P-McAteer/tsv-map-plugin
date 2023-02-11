@@ -461,15 +461,29 @@ public class JWAC_MapFrame extends JFrame implements Listener {
           if (child instanceof com.kitfox.svg.Path && child.getId() != null && child.getId().length() > 1) {
             // Do we have a text child?
             try {
+              String country_name = child.getId().trim().toLowerCase();
+              if (!last_recolor_colors.containsKey(country_name)) {
+                return;
+              }
               com.kitfox.svg.Text text_elm = new com.kitfox.svg.Text();
-              text_elm.appendText("Text from column "+text_column_i);
+              text_elm.appendText("Text from column "+text_column_i+" on country_name="+country_name);
+              text_elm.addAttribute("id", com.kitfox.svg.animation.AnimationElement.AT_XML, country_name+"_text");
+
+              int x = (int) (Math.random() * 300);
+              int y = (int) (Math.random() * 300);
+              text_elm.addAttribute("x", com.kitfox.svg.animation.AnimationElement.AT_XML, ""+x);
+              text_elm.addAttribute("y", com.kitfox.svg.animation.AnimationElement.AT_XML, ""+y);
+
               //text_elm.rebuild(); // Throws nullptr
               
-              child.loaderAddChild(null, text_elm);
+              //child.loaderAddChild(null, text_elm);
+
+              try {
+                this.mapPanel.svg_diagram.getRoot().loaderAddChild(null, text_elm);
+              }
+              catch (Exception e) { e.printStackTrace(); }
               
-              child.swapChildren(0, 0); // forces a call to .build()
-              
-              System.out.println("Added text to "+child);
+              System.out.println("Added text to "+child+" country_name="+country_name);
 
             }
             catch (Exception e) { e.printStackTrace(); }
@@ -482,8 +496,13 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         System.out.println("TODO remove all text!");
       }
 
+      // try {
+      //   this.mapPanel.svg_diagram.getRoot().build();
+      // }
+      // catch (Exception e) { e.printStackTrace(); }
+
       // Again, guessing
-      this.mapPanel.svg_diagram = com.kitfox.svg.SVGCache.getSVGUniverse().getDiagram(this.mapPanel.svg_panel.getSvgURI());
+      //this.mapPanel.svg_diagram = com.kitfox.svg.SVGCache.getSVGUniverse().getDiagram(this.mapPanel.svg_panel.getSvgURI());
 
     }
     catch (Exception e) {
