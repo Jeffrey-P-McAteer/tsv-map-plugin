@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.function.Function;
+import java.util.function.*;
 
 import  java.util.prefs.*;
 
@@ -208,13 +208,29 @@ public class JWAC_MapFrame extends JFrame implements Listener {
 
     if (last_picked_svg_element != null) {
       // reset it
+      String svg_id = last_picked_svg_element.getId();
+      if (svg_id == null) {
+        svg_id = "";
+      }
+      svg_id = svg_id.trim();
+      String last_color = "red";
+      if (last_recolor_colors.containsKey(svg_id)) {
+        last_color = last_recolor_colors.get(svg_id);
+      }
+      else if (last_recolor_colors.containsKey(svg_id.toLowerCase())) {
+        last_color = last_recolor_colors.get(svg_id.toLowerCase());
+      }
+      else {
+        System.out.println("Cannot find a color for svg_id = "+svg_id);
+      }
+
       try {
-        last_picked_svg_element.setAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, "red");
+        last_picked_svg_element.setAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, last_color);
       }
       catch (Exception e) {
         //e.printStackTrace();
         try {
-          last_picked_svg_element.addAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, "red");
+          last_picked_svg_element.addAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, last_color);
         }
         catch (Exception e2) {
           e2.printStackTrace();
@@ -278,7 +294,6 @@ public class JWAC_MapFrame extends JFrame implements Listener {
   }
 
   private HashMap<String, String> last_recolor_colors = new HashMap<String, String>();
-  private HashMap<String, SVGElement> last_recolor_svg_paths = new HashMap<String, SVGElement>();
 
   public void recolor_all_countries() {
     try {
@@ -397,7 +412,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
               
               // Persist this info so selectors can restore old colors
               last_recolor_colors.put(country_name, fill_color_val);
-              last_recolor_svg_paths.put(country_name, country_svg_paths.get(country_name) );
+              last_recolor_colors.put(country_name.toLowerCase(), fill_color_val); // We are loose w/ identifier details
 
               try {
                 country_svg_paths.get(country_name).setAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, fill_color_val);
@@ -441,10 +456,35 @@ public class JWAC_MapFrame extends JFrame implements Listener {
       if (text_column_i >= 0) {
         System.out.println("TODO set all text to value in column "+text_column_i);
 
+        this.mapPanel.for_all_svg_children(null, (child) -> {
+          //System.out.println("child="+child);
+          if (child instanceof com.kitfox.svg.Path && child.getId() != null && child.getId().length() > 1) {
+            // Do we have a text child?
+            try {
+              com.kitfox.svg.Text text_elm = new com.kitfox.svg.Text();
+              text_elm.appendText("Text from column "+text_column_i);
+              //text_elm.rebuild(); // Throws nullptr
+              
+              child.loaderAddChild(null, text_elm);
+              
+              child.swapChildren(0, 0); // forces a call to .build()
+              
+              System.out.println("Added text to "+child);
+
+            }
+            catch (Exception e) { e.printStackTrace(); }
+          }
+
+        });
+
       }
       else {
         System.out.println("TODO remove all text!");
       }
+
+      // Again, guessing
+      this.mapPanel.svg_diagram = com.kitfox.svg.SVGCache.getSVGUniverse().getDiagram(this.mapPanel.svg_panel.getSvgURI());
+
     }
     catch (Exception e) {
       e.printStackTrace();
@@ -783,6 +823,30 @@ public class JWAC_MapFrame extends JFrame implements Listener {
                 catch (Exception e2) {
                   e2.printStackTrace();
                 }
+              }
+
+            }
+          }
+        }
+      }
+
+      public void for_all_svg_children(com.kitfox.svg.Group parent, Consumer<SVGElement> callback) {
+        if (this.svg_diagram != null) {
+          if (parent == null) {
+            parent = this.svg_diagram.getRoot();
+          }
+          for (int i=0; i<parent.getNumChildren(); i+=1) {
+            SVGElement child = parent.getChild(i);
+            if (child instanceof com.kitfox.svg.Group) {
+              for_all_svg_children((com.kitfox.svg.Group) child, callback);
+            }
+            else {
+
+              try {
+                callback.accept(child);
+              }
+              catch (Exception e) {
+                e.printStackTrace();
               }
 
             }
