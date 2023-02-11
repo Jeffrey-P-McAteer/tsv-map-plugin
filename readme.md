@@ -31,3 +31,10 @@ graph windows were constructed, and because of this is a little cluttered.
 `DataVisWithOverride.java` is responsible for constructing the window class in `JWAC_ATSVFrontend.java`, which extends
 the TSV class `ATSVFrontend` to add the button from `MenuJWACMap.java`, which constructs `JWAC_MapFrame` to open the map graph.
 
+# Useful 3rd-party documentation
+
+ - https://www.javadoc.io/doc/com.formdev/svgSalamander/latest/index.html
+ - https://github.com/blackears/svgSalamander/tree/03c610df2a6f703a5f570041624ac4d546e800f5
+
+
+ 

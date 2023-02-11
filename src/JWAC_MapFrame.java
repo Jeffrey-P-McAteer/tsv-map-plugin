@@ -294,6 +294,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
   }
 
   private HashMap<String, String> last_recolor_colors = new HashMap<String, String>();
+  private HashMap<String, ArrayList<Integer>> last_recolor_country_to_row_ids = new HashMap<String, ArrayList<Integer>>();
 
   public void recolor_all_countries() {
     try {
@@ -351,6 +352,20 @@ public class JWAC_MapFrame extends JFrame implements Listener {
           catch (Exception e) {
             e.printStackTrace();
           }
+
+          try {
+            if (!last_recolor_country_to_row_ids.containsKey(row_country_name.toLowerCase())) {
+              last_recolor_country_to_row_ids.put(row_country_name.toLowerCase(), new ArrayList<Integer>() );
+            }
+
+            last_recolor_country_to_row_ids.get(row_country_name.toLowerCase()).add(row_i);
+
+          }
+          catch(Exception e) {
+            e.printStackTrace();
+          }
+
+
         }
 
         if (unparseable_values > 0) {
@@ -411,7 +426,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
               String fill_color_val = "#"+hsvToRgb((float) (double) country_hue_values.get(country_name), 1.0f, 1.0f);
               
               // Persist this info so selectors can restore old colors
-              last_recolor_colors.put(country_name, fill_color_val);
+              // last_recolor_colors.put(country_name, fill_color_val);
               last_recolor_colors.put(country_name.toLowerCase(), fill_color_val); // We are loose w/ identifier details
 
               try {
@@ -465,25 +480,63 @@ public class JWAC_MapFrame extends JFrame implements Listener {
               if (!last_recolor_colors.containsKey(country_name)) {
                 return;
               }
-              com.kitfox.svg.Text text_elm = new com.kitfox.svg.Text();
-              text_elm.appendText("Text from column "+text_column_i+" on country_name="+country_name);
-              text_elm.addAttribute("id", com.kitfox.svg.animation.AnimationElement.AT_XML, country_name+"_text");
+              String text_elm_id = country_name+"_text";
+              com.kitfox.svg.Text text_elm = (com.kitfox.svg.Text) this.mapPanel.svg_diagram.getElement(text_elm_id);
+              boolean is_new = false;
+              if (text_elm == null) {
+                text_elm = new com.kitfox.svg.Text();
+                text_elm.addAttribute("id", com.kitfox.svg.animation.AnimationElement.AT_XML, text_elm_id);
 
-              int x = (int) (Math.random() * 300);
-              int y = (int) (Math.random() * 300);
-              text_elm.addAttribute("x", com.kitfox.svg.animation.AnimationElement.AT_XML, ""+x);
-              text_elm.addAttribute("y", com.kitfox.svg.animation.AnimationElement.AT_XML, ""+y);
+                java.awt.geom.Rectangle2D rect = ((com.kitfox.svg.Path) child).getBoundingBox();
+                double x = rect.getCenterX() - 10.0;
+                double y = rect.getCenterY();
 
-              //text_elm.rebuild(); // Throws nullptr
-              
-              //child.loaderAddChild(null, text_elm);
+                if (x < 0.0) {
+                  x = 0.0;
+                }
+                if (y < 0.0) {
+                  y = 0.0;
+                }
 
-              try {
-                this.mapPanel.svg_diagram.getRoot().loaderAddChild(null, text_elm);
+                x /= 2.0;
+                y /= 2.0;
+
+                text_elm.addAttribute("x", com.kitfox.svg.animation.AnimationElement.AT_XML, ""+((int) x) );
+                text_elm.addAttribute("y", com.kitfox.svg.animation.AnimationElement.AT_XML, ""+((int) y) );
+
+                System.out.println("x="+x+" y="+y);
+                is_new = true;
               }
-              catch (Exception e) { e.printStackTrace(); }
               
-              System.out.println("Added text to "+child+" country_name="+country_name);
+              text_elm.getContent().clear();
+              
+              String data_value = "";
+              if (last_recolor_country_to_row_ids.containsKey(country_name)) {
+                for (int row_i : last_recolor_country_to_row_ids.get(country_name)) {
+                  String row_text = this.ds.getColumn(text_column_i).getStringValue(row_i).trim();
+                  if (data_value.length() < 1) {
+                    data_value = row_text;
+                  }
+                  else if (!data_value.contains(row_text)) {
+                    data_value += ", "+row_text;
+                  }
+                }
+              }
+
+              text_elm.appendText(data_value);
+
+              if (is_new) {
+                try {
+                  child.loaderAddChild(null, text_elm);
+                }
+                catch (Exception e) { e.printStackTrace(); }
+                try {
+                  this.mapPanel.svg_diagram.getRoot().loaderAddChild(null, text_elm);
+                }
+                catch (Exception e) { e.printStackTrace(); }
+              }
+              
+              System.out.println("Added text to "+child+" country_name="+country_name+" at data_value="+data_value);
 
             }
             catch (Exception e) { e.printStackTrace(); }
