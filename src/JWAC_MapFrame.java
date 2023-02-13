@@ -470,6 +470,8 @@ public class JWAC_MapFrame extends JFrame implements Listener {
     try {
       this.mapPanel.svg_diagram = com.kitfox.svg.SVGCache.getSVGUniverse().getDiagram(this.mapPanel.svg_panel.getSvgURI()); // Wierdness that fixes painting
       
+      int font_size = this.mapPanel.toolbar_font_size_slider.getValue();
+
       int country_col_i_to_use = this.mapPanel.toolbar_map_value_selector.getSelectedIndex();
       int num_rows = this.ds.getColumn(country_col_i_to_use).size();
       
@@ -531,6 +533,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
                 text_elm.addAttribute("y", com.kitfox.svg.animation.AnimationElement.AT_XML, ""+((int) y) );
 
                 text_elm.addAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, "black");
+                text_elm.addAttribute("font-size", com.kitfox.svg.animation.AnimationElement.AT_CSS, ""+font_size);
 
                 //System.out.println("x="+x+" y="+y);
 
@@ -551,6 +554,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
                 text_elm.setAttribute("x", com.kitfox.svg.animation.AnimationElement.AT_XML, ""+((int) x) );
                 text_elm.setAttribute("y", com.kitfox.svg.animation.AnimationElement.AT_XML, ""+((int) y) );
                 text_elm.setAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, "black");
+                text_elm.setAttribute("font-size", com.kitfox.svg.animation.AnimationElement.AT_CSS, ""+font_size);
               }
               
               text_elm.getContent().clear();
@@ -700,6 +704,8 @@ public class JWAC_MapFrame extends JFrame implements Listener {
       public JLabel toolbar_map_value_min;
       public JLabel toolbar_map_value_max;
 
+      public JSlider toolbar_font_size_slider;
+
       public JWAC_MapPanel() {
           this.setLayout(new BorderLayout());
 
@@ -842,6 +848,30 @@ public class JWAC_MapFrame extends JFrame implements Listener {
           }
         });
         toolbar.add(this.toolbar_map_text_field_selector);
+
+
+        JLabel text_font_label = new JLabel("Font Size");
+        toolbar.add(flowLeftWrapper(text_font_label));
+
+        this.toolbar_font_size_slider = new JSlider();
+        this.toolbar_font_size_slider.setMinimum(2);
+        this.toolbar_font_size_slider.setMaximum(36);
+        this.toolbar_font_size_slider.setMajorTickSpacing(8);
+        this.toolbar_font_size_slider.setMinorTickSpacing(4);
+        this.toolbar_font_size_slider.setValue(16);
+        this.toolbar_font_size_slider.setOrientation(javax.swing.SwingConstants.HORIZONTAL);
+
+        this.toolbar_font_size_slider.setPaintTrack(true);
+        this.toolbar_font_size_slider.setPaintTicks(true);
+        this.toolbar_font_size_slider.setPaintLabels(true);
+        this.toolbar_font_size_slider.setSnapToTicks(false);
+        
+        this.toolbar_font_size_slider.addChangeListener((evt) -> {
+          if (this.parentFrame != null) {
+            this.parentFrame.retext_all_countries();
+          }
+        });
+        toolbar.add(this.toolbar_font_size_slider);
 
         
       }
