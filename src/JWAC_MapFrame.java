@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.function.*;
 
 import  java.util.prefs.*;
@@ -399,8 +400,8 @@ public class JWAC_MapFrame extends JFrame implements Listener {
           return;
         }
 
-        System.out.println("max_country_raw_val = "+max_country_raw_val);
-        System.out.println("min_country_raw_val = "+min_country_raw_val);
+        // System.out.println("max_country_raw_val = "+max_country_raw_val);
+        // System.out.println("min_country_raw_val = "+min_country_raw_val);
 
         float max_hue_val = 0.71f; // cannot wrap around, highest value is a blue color instead of red (confusing UI)
 
@@ -462,14 +463,20 @@ public class JWAC_MapFrame extends JFrame implements Listener {
     }
   }
 
+  // Used when clearing created text elements. IDs will match child elements exactly, for all *_text Text items.
+  private HashSet<String> created_text_elm_ids = new HashSet<String>();
+
   public void retext_all_countries() {
     try {
       this.mapPanel.svg_diagram = com.kitfox.svg.SVGCache.getSVGUniverse().getDiagram(this.mapPanel.svg_panel.getSvgURI()); // Wierdness that fixes painting
-
+      
+      int country_col_i_to_use = this.mapPanel.toolbar_map_value_selector.getSelectedIndex();
+      int num_rows = this.ds.getColumn(country_col_i_to_use).size();
+      
       // Get column index, or mark all red if == -1
       int text_column_i = this.mapPanel.toolbar_map_text_field_selector.getSelectedIndex() - 1 /* idx 0 == "None", now it's == -1 */;
+      
       if (text_column_i >= 0) {
-        System.out.println("TODO set all text to value in column "+text_column_i);
 
         this.mapPanel.for_all_svg_children(null, (child) -> {
           //System.out.println("child="+child);
@@ -477,13 +484,14 @@ public class JWAC_MapFrame extends JFrame implements Listener {
             // Do we have a text child?
             try {
               String country_name = child.getId().trim().toLowerCase();
-              if (!last_recolor_colors.containsKey(country_name)) {
-                return;
-              }
+              // if (!last_recolor_colors.containsKey(country_name)) {
+              //   return;
+              // }
 
               String data_value = "";
-              if (last_recolor_country_to_row_ids.containsKey(country_name)) {
-                for (int row_i : last_recolor_country_to_row_ids.get(country_name)) {
+              for (int row_i=0; row_i < num_rows; row_i += 1) {
+                String row_country_val = this.ds.getColumn(country_col_i_to_use).getStringValue(row_i).trim();
+                if (row_country_val.equalsIgnoreCase(country_name)) {
                   String row_text = this.ds.getColumn(text_column_i).getStringValue(row_i).trim();
                   if (data_value.length() < 1) {
                     data_value = row_text;
@@ -494,7 +502,14 @@ public class JWAC_MapFrame extends JFrame implements Listener {
                 }
               }
 
+              if (data_value.length() < 1) {
+                return; // do not bother w/ svg IDs which do not exist in the dataset
+              }
+              
               String text_elm_id = country_name+"_text";
+              
+              created_text_elm_ids.add(text_elm_id);
+
               com.kitfox.svg.Text text_elm = (com.kitfox.svg.Text) this.mapPanel.svg_diagram.getElement(text_elm_id);
               boolean is_new = false;
               if (text_elm == null) {
@@ -535,6 +550,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
 
                 text_elm.setAttribute("x", com.kitfox.svg.animation.AnimationElement.AT_XML, ""+((int) x) );
                 text_elm.setAttribute("y", com.kitfox.svg.animation.AnimationElement.AT_XML, ""+((int) y) );
+                text_elm.setAttribute("fill", com.kitfox.svg.animation.AnimationElement.AT_CSS, "black");
               }
               
               text_elm.getContent().clear();
@@ -555,7 +571,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
                 catch (Exception e) { e.printStackTrace(); }
               }
               
-              System.out.println("Added text to "+child+" country_name="+country_name+" at data_value="+data_value);
+              //System.out.println("Added text to "+child+" country_name="+country_name+" at data_value="+data_value);
 
             }
             catch (Exception e) { e.printStackTrace(); }
@@ -565,7 +581,20 @@ public class JWAC_MapFrame extends JFrame implements Listener {
 
       }
       else {
-        System.out.println("TODO remove all text!");
+        for (String text_elm_id : created_text_elm_ids) {
+          try {
+            com.kitfox.svg.Text text_elm = (com.kitfox.svg.Text) this.mapPanel.svg_diagram.getElement(text_elm_id);
+            text_elm.getContent().clear();
+            // Push a re-render somehow
+            SVGElement parent = text_elm.getParent();
+            parent.loaderAddChild(null, text_elm);
+            parent.swapChildren(0, 0); // forces a call to .build(), which constructs bounds in text_elm
+            parent.removeChild(text_elm);
+          }
+          catch (Exception e) {
+            e.printStackTrace();
+          }
+        }
       }
 
       this.mapPanel.svg_panel.repaint();
