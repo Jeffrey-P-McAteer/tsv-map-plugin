@@ -171,6 +171,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
     // this.histogramPanel.refreshPanel();
     setLinkedIcon();
     refreshImageOfBrushControls();
+    
   }
   
   public void refreshImageOfBrushControls() {
@@ -181,18 +182,25 @@ public class JWAC_MapFrame extends JFrame implements Listener {
   }
   
   public void actionBrushorPreferenceChange() {
-    // if (!this.histogramPanel.getVectorofVariables().contains("Preference Shading")) {
-    //   this.histogramPanel.brushUpdate();
-    //   if (this.histogramPanel.getModel().isDisplayBrushes())
-    //     refreshImageOfBrushControls(); 
-    // } else {
-    //   this.histogramPanel.refreshPanel();
-    // } 
+    try {
+      recolor_all_countries();
+      retext_all_countries();
+    }
+    catch (Exception e) {
+      e.printStackTrace();
+    }
   }
   
   public void columnModelIsModified(DesignSpace desSpace, String options) {
     // this.histogramPanel.setDesignSpace(desSpace);
     // this.histogramPanel.refreshPanel();
+    // try {
+    //   recolor_all_countries();
+    //   retext_all_countries();
+    // }
+    // catch (Exception e) {
+    //   e.printStackTrace();
+    // }
   }
   
   public void frontendHasBeenIconified(boolean min) {}
@@ -323,6 +331,11 @@ public class JWAC_MapFrame extends JFrame implements Listener {
 
         int unparseable_values = 0;
         for (int row_i=0; row_i < num_rows; row_i += 1) {
+          boolean row_should_be_gray = !this.ds.isVisible(row_i);
+          if (row_should_be_gray) {
+            continue;
+          }
+
           String row_country_name = this.ds.getColumn(country_col_i_to_use).getStringValue(row_i).trim();
           String row_col_val = this.ds.getColumn(color_column_i).getStringValue(row_i).trim();
           row_col_val = row_col_val.replace(",", "");
