@@ -815,7 +815,7 @@ public class JWAC_MapFrame extends JFrame implements Listener {
         });
         toolbar.add(this.toolbar_map_color_field_selector);
 
-        JLabel color_field_collision_label = new JLabel("Color Field value collision stragety");
+        JLabel color_field_collision_label = new JLabel("Color Field value collision strategy");
         toolbar.add(flowLeftWrapper(color_field_collision_label));
 
         this.toolbar_map_value_collision_strat.setMaximumRowCount(18); // show lots of rows
